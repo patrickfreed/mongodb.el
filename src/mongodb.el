@@ -6,19 +6,40 @@
 
 (cl-defstruct mongodb-shell
   uri
-  process)
+  process
+  shell-version
+  server-version
+  topology-type)
 
 (defvar output-start 0)
+(defconst mongodb-shell-prompt-regex "^\\([^:]*:\\)?\\(PRIMARY\\|SECONDARY\\|ARBITER\\|mongos\\)?> $")
 
 (defun mongodb-shell-start (uri)
   (with-current-buffer (get-buffer-create "*mongodb-shell-process*")
     (erase-buffer)
     (let ((process (start-process "mongo-shell" (current-buffer) "mongo" uri)))
-      (while (not (re-search-backward "^>" nil t))
+      (while (not (re-search-backward mongodb-shell-prompt-regex nil t))
         (accept-process-output process))
-      (make-mongodb-shell
-       :uri uri
-       :process process))))
+      (let ((topology-type
+             (let ((server-type (match-string 2)))
+               (message "stuff %S" (string= server-type "mongos"))
+               (cond
+                ((string-match-p "\\(PRIMARY\\|SECONDARY\\|ARBITER\\)" server-type) "Replica Set")
+                ((string= server-type "mongos") "Sharded")
+                ("Standalone")))))
+        (goto-char (point-min))
+        (let ((shell-version
+               (when (re-search-forward "MongoDB shell version v\\([0-9.]+\\)$" nil t)
+                 (match-string 1)))
+              (server-version
+               (when (re-search-forward "MongoDB server version: \\([0-9.]+\\)$" nil t)
+                 (match-string 1))))
+          (make-mongodb-shell
+           :uri uri
+           :process process
+           :shell-version shell-version
+           :server-version server-version
+           :topology-type topology-type))))))
 
 (defun mongodb-shell-command (shell command)
   (let ((process (mongodb-shell-process shell)))
@@ -29,13 +50,18 @@
         (while
             (and
              (process-live-p process)
-             (not (re-search-backward "^>" output-start t))
-             (or
-              (= (point) output-start)
-              (not (eq (char-before (1- (point))) ?\>))))
+             (save-restriction
+               (narrow-to-region output-start (point-max))
+               (goto-char (point-min))
+               (not (re-search-forward mongodb-shell-prompt-regex nil t))))
           (accept-process-output process))
-        (let ((output-end (- (point-max) 2)))
-          (string-trim (buffer-substring output-start output-end)))))))
+        (when (process-live-p process)
+          (save-restriction
+            (narrow-to-region output-start (point-max))
+            (goto-char (point-min))
+            (re-search-forward mongodb-shell-prompt-regex)
+            (let ((output-end (match-beginning 0)))
+              (string-trim (buffer-substring output-start output-end)))))))))
 
 (defun mongodb--parse-databases ()
   (if (re-search-forward "^\\([^ ]+\\)[ ]+\\([0-9.]+\\)GB$" nil t)
@@ -61,13 +87,19 @@
     (goto-char (point-min))
     (mongodb--parse-collections)))
 
-(let ((mongo-process (mongodb-shell-start "mongodb://localhost:27017/admin")))
+(let ((mongo-process (mongodb-shell-start "mongodb://localhost:27017/woooo")))
   (message "==============")
   (with-current-buffer (get-buffer-create "*mongo-scratch*")
     (erase-buffer)
-    ;; (insert (format "%S" (mongodb-shell-list-collections mongo-process "admin")))
-    (insert (mongodb-shell-command mongo-process "show collections"))
-    (mongodb-shell-command mongo-process "exit")))
+    (message (mongodb-shell-topology-type mongo-process))
+    (insert (format "%S" (mongodb-shell-list-collections mongo-process "admin")) "\n")
+    (insert (format "%S" (mongodb-shell-command mongo-process "db.blah.find()")) "\n")
+    (insert (format "%S" (mongodb-shell-command mongo-process "use blah")) "\n")
+    (insert (format "%S" (mongodb-shell-command mongo-process "db.blah.insertOne({})")) "\n")
+    (insert (format "%S" (mongodb-shell-command mongo-process "db.blah.find()")) "\n")
+    ;; (insert (mongodb-shell-get-topology mongo-process))
+    (mongodb-shell-command mongo-process "exit")
+    ))
 
 (defvar-local mongo-shell nil)
 
@@ -98,11 +130,11 @@
       (setq-local mongo-shell (mongodb-shell-start uri)))
     (magit-insert-section (mongodb-buffer)
       (magit-insert-section (mongodb-deployment-info)
-        (magit-insert-heading "foo")
+        ;; (magit-insert-heading "foo")
         (mongodb--insert-header-line "Connection String" uri)
-        (mongodb--insert-header-line "MongoDB Server Version" "4.4.0")
-        (mongodb--insert-header-line "MongoDB Shell Version" "4.4.0")
-        (mongodb--insert-header-line "Topology" "Standalone"))
+        (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongo-shell))
+        (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongo-shell))
+        (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongo-shell)))
       (newline)
       (let ((dbs (mongodb-shell-list-databases mongo-shell)))
         (magit-insert-section (mongodb-databases)
