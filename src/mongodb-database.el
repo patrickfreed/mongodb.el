@@ -3,6 +3,7 @@
 (provide 'mongodb-database)
 
 (require 'mongodb-shell)
+(require 'mongodb-collection)
 
 (defvar-local mongodb-database-current nil)
 
@@ -35,7 +36,8 @@
           (propertize (format " (%d)" (length colls))))
         (seq-do
          (lambda (coll)
-           (insert (propertize coll 'face 'magit-branch-remote) "\n"))
+           (magit-insert-section (mongodb-collection-section coll)
+             (insert (propertize coll 'face 'magit-branch-remote) "\n")))
          colls))))
   (read-only-mode))
 
@@ -57,6 +59,11 @@
     (erase-buffer)
     (insert output)))
 
+(defun mongodb-database--view-collection-at-point ()
+  (interactive)
+  (when-let ((coll (magit-section-value-if 'mongodb-collection-section)))
+    (mongodb-view-collection mongodb-shell-process mongodb-database-current coll)))
+
 (define-transient-command mongodb-database-dispatch ()
   "Database operations"
   ["Database operations"
@@ -74,10 +81,12 @@
       "?" 'mongodb-database-dispatch
       "r" 'mongodb-database--run-command
       "d" 'mongodb-database--use-database
-      "D" 'mongodb-database--drop))
+      "D" 'mongodb-database--drop
+      (kbd "<RET>") 'mongodb-database--view-collection-at-point))
   (define-key mongodb-database-mode-map (kbd "r") 'mongodb-database--run-command)
   (define-key mongodb-database-mode-map (kbd "d") 'mongodb-database--use-database)
   (define-key mongodb-database-mode-map (kbd "D") 'mongodb-database--drop)
+  (define-key mongodb-database-mode-map (kbd "<RET>") 'mongodb-database--view-collection-at-point)
   (define-key mongodb-database-mode-map (kbd "?") 'mongodb-database-dispatch)
   ;; (define-key evg-view-patch-mode-map (kbd "r") 'evg-view-patch-refresh)
   ;; (define-key evg-view-patch-mode-map (kbd "d") 'evg-switch-task-format)

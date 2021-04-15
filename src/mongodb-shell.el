@@ -86,3 +86,28 @@
     (insert (mongodb-shell-command shell "show collections"))
     (goto-char (point-min))
     (mongodb--parse-collections)))
+
+(defun mongodb-shell-collection-count (shell db coll)
+  (mongodb-shell-command shell (concat "use " db))
+  (string-to-number (mongodb-shell-command shell (format "db.%s.countDocuments({})" coll))))
+
+(defun mongodb-shell-find (shell db coll filter)
+  (mongodb-shell-command shell (concat "use " db))
+  (let ((uuid (mongodb-shell-command shell "UUID().hex()")))
+    (with-temp-buffer
+      (insert (mongodb-shell-command shell (format "cursors[%S] = db.%s.find(%s)" uuid coll filter)))
+      (goto-char (point-min))
+      (if (re-search-forward "^Type \"it\" for more" nil t)
+          (cons (buffer-substring (point-min) (match-beginning 0)) uuid)
+        (cons (buffer-string) nil)))))
+
+(defun mongodb-shell-cursor-live-p (shell cursor-id)
+  (string= (mongodb-shell-command shell (format "cursors[%S].isExhausted()" cursor-id)) "false"))
+
+(defun mongodb-shell-cursor-next (shell cursor-id)
+  (with-temp-buffer
+    (insert (mongodb-shell-command shell (format "cursors[%S]" cursor-id)))
+    (goto-char (point-min))
+    (if (re-search-forward "^Type \"it\" for more" nil t)
+        (buffer-substring (point-min) (match-beginning 0))
+      (buffer-string))))
