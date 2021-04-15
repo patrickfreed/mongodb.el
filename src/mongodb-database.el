@@ -4,16 +4,22 @@
 
 (require 'mongodb-shell)
 
+(defvar-local mongodb-database-current nil)
+
+(defun mongodb-database--use-database (db-name)
+  (interactive
+   (list (completing-read "View database: " (mongodb-shell-list-database-names mongodb-shell-process))))
+  (mongodb-view-database mongodb-shell-process db-name))
+
 (defun mongodb-view-database (mongo-shell db-name)
-  (message "%S" mongo-shell)
   (switch-to-buffer
    (get-buffer-create (format "mongodb-database: %s/%s" (mongodb-shell-uri mongo-shell) db-name)))
   (mongodb-database-mode)
   (read-only-mode -1)
   (setq display-line-numbers nil)
   (erase-buffer)
-  (message "%S %S" mongo-shell db-name)
   (setq-local mongodb-shell-process mongo-shell)
+  (setq-local mongodb-database-current db-name)
   (magit-insert-section (mongodb-database-buffer-section)
     (magit-insert-section (mongodb-database-info-section)
       (mongodb--insert-header-line "Database Name" (propertize db-name 'face 'magit-branch-local))
@@ -33,20 +39,46 @@
          colls))))
   (read-only-mode))
 
+(defun mongodb-database--drop ()
+  (interactive)
+  (if (y-or-n-p (format "Are you sure you want to drop the %S database?" mongodb-database-current))
+      (progn
+        (mongodb-shell-command mongodb-shell-process (format "db.getSiblingDB(%S).dropDatabase()" mongodb-database-current))
+        (message "Database %S dropped." mongodb-database-current)
+        (mongodb-view-database mongodb-shell-process mongodb-database-current))
+    (message "Drop cancelled.")))
+
+(defun mongodb-database--run-command (command)
+  (interactive "sRun command: ")
+  (mongodb-shell-command mongodb-shell-process (format "use %s" mongodb-database-current))
+  (let ((output (mongodb-shell-command mongodb-shell-process (format "db.runCommand(%s)" command))))
+    (switch-to-buffer-other-window (get-buffer-create "*mongodb-shell-output*"))
+    (javascript-mode)
+    (erase-buffer)
+    (insert output)))
+
+(define-transient-command mongodb-database-dispatch ()
+  "Database operations"
+  ["Database operations"
+   ("r" "Run a database command" mongodb-database--run-command)
+   ("d" "View another database" mongodb-database--use-database)
+   ("D" "Drop this database" mongodb-database--drop)])
+
 (defvar mongodb-database-mode-map nil "Keymap for MongoDB database buffers")
 
 (progn
   (setq mongodb-database-mode-map (make-sparse-keymap))
 
-  ;; (when (require 'evil nil t)
-  ;;   (evil-define-key 'normal evg-view-patch-mode-map
-  ;;     (kbd "<RET>") 'evg-view-task-at-point
-  ;;     "r" 'evg-view-patch-refresh
-  ;;     "d" 'evg-switch-task-format
-  ;;     (kbd "M-j") 'evg-goto-next-task-failure
-  ;;     (kbd "M-k") 'evg-goto-previous-task-failure
-  ;;     evg-back-key 'evg-back))
-  ;; (define-key evg-view-patch-mode-map (kbd "<RET>") 'evg-view-task-at-point)
+  (when (require 'evil nil t)
+    (evil-define-key 'normal mongodb-database-mode-map
+      "?" 'mongodb-database-dispatch
+      "r" 'mongodb-database--run-command
+      "d" 'mongodb-database--use-database
+      "D" 'mongodb-database--drop))
+  (define-key mongodb-database-mode-map (kbd "r") 'mongodb-database--run-command)
+  (define-key mongodb-database-mode-map (kbd "d") 'mongodb-database--use-database)
+  (define-key mongodb-database-mode-map (kbd "D") 'mongodb-database--drop)
+  (define-key mongodb-database-mode-map (kbd "?") 'mongodb-database-dispatch)
   ;; (define-key evg-view-patch-mode-map (kbd "r") 'evg-view-patch-refresh)
   ;; (define-key evg-view-patch-mode-map (kbd "d") 'evg-switch-task-format)
   ;; (define-key evg-view-patch-mode-map (kbd "M-n") 'evg-goto-next-task-failure)

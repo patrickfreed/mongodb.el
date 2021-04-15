@@ -25,6 +25,7 @@
       (insert (mongodb--make-indentation (1+ indentation)) value))
     (newline)))
 
+;;;###autoload
 (defun mongodb-connect (uri)
   (interactive "sConnection String: ")
   (message "connecting")

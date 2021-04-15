@@ -71,6 +71,9 @@
     (goto-char (point-min))
     (mongodb--parse-databases)))
 
+(defun mongodb-shell-list-database-names (shell)
+  (seq-map 'car (mongodb-shell-list-databases shell)))
+
 (defun mongodb--parse-collections ()
   (if (not (eobp))
       (cons
