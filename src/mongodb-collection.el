@@ -34,12 +34,27 @@
       (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
              (first-batch (car result))
              (cursor-id (cdr result)))
-        (insert first-batch)
+        (seq-do
+         (lambda (doc)
+           (magit-insert-section (mongodb-collection-document doc t)
+             (if (> (length doc) (window-width))
+                 (progn
+                   (magit-insert-heading
+                     (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
+                   (magit-insert-section (mongodb-collection-document-more doc t)
+                     (insert (mongodb-document-string doc) "\n")))
+               (insert (mongodb-document-string doc) "\n"))))
+         first-batch)
         (when cursor-id
           (insert-text-button "Type + to show more results")))))
-  (message "here4")
   (read-only-mode))
 
+(defun mongodb-document-string (doc)
+  (with-temp-buffer
+    (javascript-mode)
+    (insert doc)
+    (font-lock-fontify-region (point-min) (point-max))
+    (buffer-string)))
 
 ;; (define-transient-command mongodb-collection-dispatch ()
 ;;   "Database operations"

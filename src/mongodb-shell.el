@@ -31,12 +31,14 @@
               (server-version
                (when (re-search-forward "MongoDB server version: \\([0-9.]+\\)$" nil t)
                  (match-string 1))))
-          (make-mongodb-shell
-           :uri uri
-           :process process
-           :shell-version shell-version
-           :server-version server-version
-           :topology-type topology-type))))))
+          (let ((shell (make-mongodb-shell
+                        :uri uri
+                        :process process
+                        :shell-version shell-version
+                        :server-version server-version
+                        :topology-type topology-type)))
+            (mongodb-shell-command shell "let cursors = {};")
+            shell))))))
 
 (defun mongodb-shell-command (shell command)
   (let ((process (mongodb-shell-process shell)))
@@ -93,13 +95,21 @@
 
 (defun mongodb-shell-find (shell db coll filter)
   (mongodb-shell-command shell (concat "use " db))
-  (let ((uuid (mongodb-shell-command shell "UUID().hex()")))
+  (let ((uuid (mongodb-shell-command shell "UUID().hex()"))
+        (has-more))
     (with-temp-buffer
       (insert (mongodb-shell-command shell (format "cursors[%S] = db.%s.find(%s)" uuid coll filter)))
       (goto-char (point-min))
-      (if (re-search-forward "^Type \"it\" for more" nil t)
-          (cons (buffer-substring (point-min) (match-beginning 0)) uuid)
-        (cons (buffer-string) nil)))))
+      (when (re-search-forward "^Type \"it\" for more" nil t)
+        (setq has-more t)
+        (narrow-to-region (point-min) (match-beginning 0)))
+      (goto-char (point-min))
+      (cons
+       (cl-loop
+        until (eobp)
+        collect (prog1 (buffer-substring (line-beginning-position) (line-end-position))
+                  (forward-line)))
+       (and has-more uuid)))))
 
 (defun mongodb-shell-cursor-live-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursors[%S].isExhausted()" cursor-id)) "false"))

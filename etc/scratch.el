@@ -8,10 +8,11 @@
     (let* ((result (mongodb-shell-find mongo-process "many" "many" "{}"))
            (first-batch (car result))
            (cursor-id (cdr result)))
-      (insert first-batch)
-      (when cursor-id
-        (while (mongodb-shell-cursor-live-p mongo-process cursor-id)
-          (insert (mongodb-shell-cursor-next mongo-process cursor-id)))))
+      (insert (format "%S" first-batch))
+      ;; (when cursor-id
+      ;;   (while (mongodb-shell-cursor-live-p mongo-process cursor-id)
+      ;;     (insert (mongodb-shell-cursor-next mongo-process cursor-id))))
+      )
     ;; (message (mongodb-shell-topology-type mongo-process))
     ;; (insert (format "%S" (mongodb-shell-list-collections mongo-process "admin")) "\n")
     ;; (insert (format "%S" (mongodb-shell-command mongo-process "db.blah.find()")) "\n")
