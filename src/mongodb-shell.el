@@ -111,6 +111,23 @@
                   (forward-line)))
        (and has-more uuid)))))
 
+(defun mongodb-shell-find-pretty (shell db coll filter &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (let ((uuid (mongodb-shell-command shell "UUID().hex()")))
+    (mongodb-shell-command shell (format "const cursor%s = db.%s.find(%s).pretty();" uuid coll filter))
+    uuid))
+
+(defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
+  (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
+
+(defun mongodb-shell-cursor-pretty-next (shell cursor-id)
+  (with-temp-buffer
+    (insert (mongodb-shell-command shell (format "cursor%s" cursor-id)))
+    (goto-char (point-min))
+    (if (re-search-forward "^Type \"it\" for more" nil t)
+        (buffer-substring (point-min) (match-beginning 0))
+      (buffer-string))))
+
 (defun mongodb-shell-cursor-live-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursors[%S].isExhausted()" cursor-id)) "false"))
 

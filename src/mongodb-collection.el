@@ -7,26 +7,25 @@
 (defvar-local mongodb-namespace-current nil)
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name)
-  (message "in here")
   (switch-to-buffer
    (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
   (mongodb-collection-mode)
-  (message "here1")
   (read-only-mode -1)
   (setq display-line-numbers nil)
   (erase-buffer)
   (setq-local mongodb-shell-process mongo-shell)
-  (setq-local mongodb-namespace-current (format "%s.%s" db-name coll-name))
-  (message "here2")
+  (setq-local mongodb-namespace-current (cons db-name coll-name))
   (magit-insert-section (mongodb-collection-buffer-section)
     (magit-insert-section (mongodb-collection-info-section)
-      (mongodb--insert-header-line "Namespace" (propertize mongodb-namespace-current 'face 'magit-branch-local))
+      (mongodb--insert-header-line
+       "Namespace"
+       (propertize (format "%s.%s" (car mongodb-namespace-current) (cdr mongodb-namespace-current))
+                   'face 'magit-branch-local))
       (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
       (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
       (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
       (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongodb-shell-process)))
     (newline)
-    (message "here3")
     (magit-insert-section (mongodb-collection-documents)
       (magit-insert-heading
         (propertize "Documents" 'face 'magit-section-heading)
@@ -56,27 +55,57 @@
     (font-lock-fontify-region (point-min) (point-max))
     (buffer-string)))
 
-;; (define-transient-command mongodb-collection-dispatch ()
-;;   "Database operations"
-;;   ["Database operations"
-;;    ("r" "Run a database command" mongodb-database--run-command)
-;;    ("d" "View another database" mongodb-database--use-database)
-;;    ("D" "Drop this database" mongodb-database--drop)])
+(defun mongodb-collection--use-collection (coll-name)
+  (interactive
+   (list (completing-read "View collection: "
+                          (mongodb-shell-list-collections mongodb-shell-process (car mongodb-namespace-current)))))
+  (mongodb-view-collection mongodb-shell-process (car mongodb-namespace-current) coll-name))
+
+(defun mongodb-collection--find (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-find-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db (car mongodb-namespace-current))
+        (coll (cdr mongodb-namespace-current)))
+    (mongodb-query-input
+     "find filter"
+     shell-process
+     (lambda (filter)
+       (mongodb-shell-find-pretty shell-process db coll filter)))))
+
+(define-transient-command mongodb-collection-dispatch ()
+  "Collection operations"
+  ["Collection operations"
+   ("c" "View another collection" mongodb-collection--use-collection)
+   ("f" "Execute a find query on this collection" mongodb-collection-find-transient)
+   ;; ("D" "Drop this collection" mongodb-collection--drop)
+   ])
+
+(define-transient-command mongodb-collection-find-transient ()
+  "Find command"
+  ["Options"
+   ("l" "Limit the number of documents returned" "limit=")
+   ("s" "Skip this number of documents from the query" "skip=")
+   ("c"
+    "Attaches a comment to the query to allow for traceability in the logs and the system.profile collection."
+    "comment=")
+   ]
+  ["Commands"
+   ("f" "Execute a find that may return many documents" mongodb-collection--find)])
 
 (defvar mongodb-collection-mode-map nil "Keymap for MongoDB collection buffers")
 
 (progn
   (setq mongodb-collection-mode-map (make-sparse-keymap))
 
-  ;; (when (require 'evil nil t)
-    ;; (evil-define-key 'normal mongodb-collection-mode-map
-    ;;   ;; "?" 'mongodb-collection-dispatch
-    ;;   ;; "c" 'mongodb-collection--use-collection
-    ;;   ;; "D" 'mongodb-collection--drop
-    ;;   ))
-  ;; (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
+  (when (require 'evil nil t)
+    (evil-define-key 'normal mongodb-collection-mode-map
+      "?" 'mongodb-collection-dispatch
+      "c" 'mongodb-collection--use-collection
+      ;; "D" 'mongodb-collection--drop
+      ))
+  (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
-  ;; (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
+  (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
   )
 
 (define-derived-mode
