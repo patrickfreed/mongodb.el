@@ -61,7 +61,7 @@
                      (format " (%d)" (length colls)))
                    (seq-do
                     (lambda (coll)
-                      (magit-insert-section (mongodb-collection-section coll)
+                      (magit-insert-section (mongodb-collection-section `((db . ,(car db)) (coll . ,coll)))
                         (insert (propertize
                                  (concat (mongodb--make-indentation 2) coll "\n")
                                  'face 'magit-branch-remote))))
@@ -72,7 +72,10 @@
   (interactive)
   (message "inspecting")
   (when-let ((db (magit-section-value-if 'mongodb-database-section)))
-    (mongodb-view-database mongodb-shell-process db)))
+    (mongodb-view-database mongodb-shell-process db))
+  (when-let ((ns (magit-section-value-if 'mongodb-collection-section)))
+    (mongodb-view-collection mongodb-shell-process (alist-get 'db ns) (alist-get 'coll ns))))
+
 
 (define-derived-mode
   mongodb-base-mode
