@@ -83,9 +83,9 @@
 (defvar mongodb-base-mode-map nil "map")
 (progn
   (setq mongodb-base-mode-map (make-sparse-keymap))
-  ;; (when (require 'evil nil t)
-  ;;   (evil-define-key 'normal mongodb-mode-map
-  ;;     (kbd "<RET>") 'mongodb-inspect-at-point))
+  (when (require 'evil nil t)
+    (evil-define-key 'normal mongodb-base-mode-map
+      (kbd "<tab>") 'magit-section-toggle))
   (define-key mongodb-base-mode-map [remap evil-previous-line] 'evil-previous-visual-line)
   (define-key mongodb-base-mode-map [remap evil-next-line] 'evil-next-visual-line)
   (define-key mongodb-base-mode-map (kbd "<tab>") 'magit-section-toggle))

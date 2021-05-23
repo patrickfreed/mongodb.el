@@ -3,6 +3,9 @@
 (provide 'mongodb-collection)
 
 (require 'mongodb-shell)
+(require 'mongodb-query)
+
+(require 'seq)
 
 (defvar-local mongodb-namespace-current nil)
 
@@ -66,11 +69,12 @@
   (let ((shell-process mongodb-shell-process)
         (db (car mongodb-namespace-current))
         (coll (cdr mongodb-namespace-current)))
-    (mongodb-query-input
-     "find filter"
-     shell-process
-     (lambda (filter)
-       (mongodb-shell-find-pretty shell-process db coll filter)))))
+    (let ((pairs (seq-map (lambda (kvp) (split-string kvp "=")) args)))
+      (mongodb-query-input
+       "find filter"
+       shell-process
+       (lambda (filter)
+         (mongodb-shell-find-pretty shell-process db coll filter pairs))))))
 
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
@@ -85,12 +89,15 @@
   ["Options"
    ("l" "Limit the number of documents returned" "limit=")
    ("s" "Skip this number of documents from the query" "skip=")
-   ("c"
-    "Attaches a comment to the query to allow for traceability in the logs and the system.profile collection."
-    "comment=")
-   ]
+   ("o" "Order the returned documents" "sort=")
+   ("p" "Specify the fields to return in the documents that match the query filter" "projection=")
+   ("P" "Specify the read preference to use for the find" "readPref=")
+   ("r" "Specify the read concern to use for the find" "readConcern=")
+   ("m" "Limit the cumulative time for processing operations for the find" "maxTimeMS=")
+   ("c" "Attach a comment to the query" "comment=")
+   ("h" "Specify the index to use for the find" "hint=")]
   ["Commands"
-   ("f" "Execute a find that may return many documents" mongodb-collection--find)])
+   ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
 
 (defvar mongodb-collection-mode-map nil "Keymap for MongoDB collection buffers")
 
