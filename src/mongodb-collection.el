@@ -76,11 +76,35 @@
        (lambda (filter)
          (mongodb-shell-find-pretty shell-process db coll filter pairs))))))
 
+(defun mongodb-args-to-document (args)
+  (concat
+   "{"
+   (string-join
+    (seq-map (lambda (kvp)
+               (let ((parts (split-string kvp "=")))
+                 (format "%S: %s" (car parts) (cadr parts))))
+             args)
+    ",")
+   "}"))
+
+(defun mongodb-collection--insert-one (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-insert-one-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db (car mongodb-namespace-current))
+        (coll (cdr mongodb-namespace-current)))
+    (mongodb-query-input
+     "document to insert"
+     shell-process
+     (lambda (doc)
+       (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args)))
+     t)))
+
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
   ["Collection operations"
    ("c" "View another collection" mongodb-collection--use-collection)
    ("f" "Execute a find query on this collection" mongodb-collection-find-transient)
+   ("i" "Insert one document into the collection" mongodb-collection-insert-one-transient)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -98,6 +122,13 @@
    ("h" "Specify the index to use for the find" "hint=")]
   ["Commands"
    ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
+
+(define-transient-command mongodb-collection-insert-one-transient ()
+  "Find command"
+  ["Options"
+   ("w" "Specify a document expressing the write concern" "writeConcern=")]
+  ["Commands"
+   ("i" "Prompt for a document and insert it" mongodb-collection--insert-one)])
 
 (defvar mongodb-collection-mode-map nil "Keymap for MongoDB collection buffers")
 
