@@ -103,8 +103,8 @@
   "Collection operations"
   ["Collection operations"
    ("c" "View another collection" mongodb-collection--use-collection)
-   ("f" "Execute a find query on this collection" mongodb-collection-find-transient)
-   ("i" "Insert one document into the collection" mongodb-collection-insert-one-transient)
+   ("f" "find" mongodb-collection-find-transient)
+   ("i" "insertOne" mongodb-collection-insert-one-transient)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -120,14 +120,14 @@
    ("m" "Limit the cumulative time for processing operations for the find" "maxTimeMS=")
    ("c" "Attach a comment to the query" "comment=")
    ("h" "Specify the index to use for the find" "hint=")]
-  ["Commands"
+  ["Find"
    ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
 
 (define-transient-command mongodb-collection-insert-one-transient ()
   "Find command"
   ["Options"
    ("w" "Specify a document expressing the write concern" "writeConcern=")]
-  ["Commands"
+  ["Insert One"
    ("i" "Prompt for a document and insert it" mongodb-collection--insert-one)])
 
 (defvar mongodb-collection-mode-map nil "Keymap for MongoDB collection buffers")
@@ -139,9 +139,13 @@
     (evil-define-key 'normal mongodb-collection-mode-map
       "?" 'mongodb-collection-dispatch
       "c" 'mongodb-collection--use-collection
+      "i" 'mongodb-collection-insert-one-transient
+      "f" 'mongodb-collection-find-transient
       ;; "D" 'mongodb-collection--drop
       ))
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
+  (define-key mongodb-collection-mode-map (kbd "i") 'mongodb-collection-insert-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
   )
