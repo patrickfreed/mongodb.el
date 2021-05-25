@@ -8,7 +8,7 @@
 (defvar-local mongodb-query-cursor-id nil)
 (defvar-local mongodb-is-cursor-result nil)
 
-(defun mongodb-query-input (title shell body &optional no-cursor)
+(defun mongodb-query-input (title shell body &optional no-cursor input-type)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
   (mongodb-query-mode)
@@ -17,7 +17,9 @@
   (setq-local mongodb-is-cursor-result (not no-cursor))
   (insert "// " title "\n")
   (insert "// Press C-c C-c to submit." "\n")
-  (insert "{}"))
+  (cond
+   ((eq input-type 'array) (insert "[]"))
+   (t insert "{}")))
 
 (defun mongodb-query-execute ()
   (interactive)

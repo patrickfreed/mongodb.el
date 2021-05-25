@@ -99,12 +99,26 @@
        (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args)))
      t)))
 
+(defun mongodb-collection--insert-many (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-insert-many-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db (car mongodb-namespace-current))
+        (coll (cdr mongodb-namespace-current)))
+    (mongodb-query-input
+     "documents to insert"
+     shell-process
+     (lambda (docs)
+       (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args)))
+     t
+     'array)))
+
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
   ["Collection operations"
    ("c" "View another collection" mongodb-collection--use-collection)
    ("f" "find" mongodb-collection-find-transient)
-   ("i" "insertOne" mongodb-collection-insert-one-transient)
+   ("io" "insertOne" mongodb-collection-insert-one-transient)
+   ("im" "insertMany" mongodb-collection-insert-many-transient)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -124,11 +138,27 @@
    ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
 
 (define-transient-command mongodb-collection-insert-one-transient ()
-  "Find command"
+  "insertOne command"
   ["Options"
    ("w" "Specify a document expressing the write concern" "writeConcern=")]
   ["Insert One"
    ("i" "Prompt for a document and insert it" mongodb-collection--insert-one)])
+
+(define-transient-command mongodb-collection-insert-many-transient ()
+  "insertMany command"
+  ["Options"
+   ("w" "Specify a document expressing the write concern" "writeConcern=")
+   ("o" mongodb-insert-many-ordered)]
+  ["Insert Many"
+   ("i" "Prompt for an array of documents and insert them" mongodb-collection--insert-many)])
+
+(transient-define-argument mongodb-insert-many-ordered ()
+  :description "Whether to insert the documents in order or not (default true)"
+  :class 'transient-switches
+  :key "o"
+  :argument-format "ordered=%s"
+  :argument-regexp "ordered=\\(true\\|false\\)"
+  :choices '("true" "false"))
 
 (defvar mongodb-collection-mode-map nil "Keymap for MongoDB collection buffers")
 
@@ -139,12 +169,14 @@
     (evil-define-key 'normal mongodb-collection-mode-map
       "?" 'mongodb-collection-dispatch
       "c" 'mongodb-collection--use-collection
-      "i" 'mongodb-collection-insert-one-transient
+      "io" 'mongodb-collection-insert-one-transient
+      "im" 'mongodb-collection-insert-many-transient
       "f" 'mongodb-collection-find-transient
       ;; "D" 'mongodb-collection--drop
       ))
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
-  (define-key mongodb-collection-mode-map (kbd "i") 'mongodb-collection-insert-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "im") 'mongodb-collection-insert-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "io") 'mongodb-collection-insert-one-transient)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
