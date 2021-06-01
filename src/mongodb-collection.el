@@ -7,7 +7,8 @@
 
 (require 'seq)
 
-(defvar-local mongodb-namespace-current nil)
+(defvar-local mongodb-collection-current nil)
+(defvar-local mongodb-database-current nil)
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name)
   (switch-to-buffer
@@ -17,13 +18,12 @@
   (setq display-line-numbers nil)
   (erase-buffer)
   (setq-local mongodb-shell-process mongo-shell)
-  (setq-local mongodb-namespace-current (cons db-name coll-name))
+  (setq-local mongodb-database-current db-name)
+  (setq-local mongodb-collection-current coll-name)
   (magit-insert-section (mongodb-collection-buffer-section)
     (magit-insert-section (mongodb-collection-info-section)
-      (mongodb--insert-header-line
-       "Namespace"
-       (propertize (format "%s.%s" (car mongodb-namespace-current) (cdr mongodb-namespace-current))
-                   'face 'magit-branch-local))
+      (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
+      (mongodb--insert-header-line "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
       (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
       (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
       (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
@@ -51,6 +51,14 @@
           (insert-text-button "Type + to show more results")))))
   (read-only-mode))
 
+(defun mongodb-collection-refresh (&optional silent)
+  (interactive)
+  (when (not silent)
+    (message "refreshing..."))
+  (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current)
+  (when (not silent)
+    (message "refreshing...done")))
+
 (defun mongodb-document-string (doc)
   (with-temp-buffer
     (javascript-mode)
@@ -61,14 +69,14 @@
 (defun mongodb-collection--use-collection (coll-name)
   (interactive
    (list (completing-read "View collection: "
-                          (mongodb-shell-list-collections mongodb-shell-process (car mongodb-namespace-current)))))
-  (mongodb-view-collection mongodb-shell-process (car mongodb-namespace-current) coll-name))
+                          (mongodb-shell-list-collections mongodb-shell-process mongodb-database-current))))
+  (mongodb-view-collection mongodb-shell-process mongodb-database-current coll-name))
 
 (defun mongodb-collection--find (&optional args)
   (interactive (list (transient-args 'mongodb-collection-find-transient)))
   (let ((shell-process mongodb-shell-process)
-        (db (car mongodb-namespace-current))
-        (coll (cdr mongodb-namespace-current)))
+        (db mongodb-database-current)
+        (coll mongodb-collection-current))
     (let ((pairs (seq-map (lambda (kvp) (split-string kvp "=")) args)))
       (mongodb-query-input
        "find filter"
@@ -90,20 +98,25 @@
 (defun mongodb-collection--insert-one (&optional args)
   (interactive (list (transient-args 'mongodb-collection-insert-one-transient)))
   (let ((shell-process mongodb-shell-process)
-        (db (car mongodb-namespace-current))
-        (coll (cdr mongodb-namespace-current)))
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (message "inserting into collection %s" mongodb-collection-current)
     (mongodb-query-input
      "document to insert"
      shell-process
      (lambda (doc)
-       (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args)))
+       (let ((result (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
      t)))
 
 (defun mongodb-collection--insert-many (&optional args)
   (interactive (list (transient-args 'mongodb-collection-insert-many-transient)))
   (let ((shell-process mongodb-shell-process)
-        (db (car mongodb-namespace-current))
-        (coll (cdr mongodb-namespace-current)))
+        (db mongodb-database-current)
+        (coll mongodb-collection-current))
     (mongodb-query-input
      "documents to insert"
      shell-process
@@ -119,6 +132,7 @@
    ("f" "find" mongodb-collection-find-transient)
    ("io" "insertOne" mongodb-collection-insert-one-transient)
    ("im" "insertMany" mongodb-collection-insert-many-transient)
+   ("r" "Refresh" mongodb-collection-refresh)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -172,6 +186,7 @@
       "io" 'mongodb-collection-insert-one-transient
       "im" 'mongodb-collection-insert-many-transient
       "f" 'mongodb-collection-find-transient
+      "r" 'mongodb-collection-refresh
       ;; "D" 'mongodb-collection--drop
       ))
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
@@ -180,7 +195,7 @@
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
-  )
+  (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-refresh))
 
 (define-derived-mode
   mongodb-collection-mode
