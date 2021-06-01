@@ -19,20 +19,21 @@
   (insert "// Press C-c C-c to submit." "\n")
   (cond
    ((eq input-type 'array) (insert "[]"))
-   (t insert "{}")))
+   (t (insert "{}"))))
 
 (defun mongodb-query-execute ()
   (interactive)
   (goto-char (point-min))
   (flush-lines "^//")
   (let ((query-result (funcall mongodb-query-body (buffer-string)))
-        (shell-process mongodb-shell-process))
+        (shell-process mongodb-shell-process)
+        (is-cursor-result mongodb-is-cursor-result))
     (kill-buffer "*mongodb query input*")
     (switch-to-buffer-other-window (get-buffer-create "*mongodb query results*"))
     (erase-buffer)
     (mongodb-query-results-mode)
     (hs-minor-mode)
-    (if mongodb-is-cursor-result
+    (if is-cursor-result
         (let ((cursor-id query-result))
           (setq-local mongodb-query-cursor-id cursor-id)
           (while (mongodb-shell-cursor-live-pretty-p shell-process cursor-id)
