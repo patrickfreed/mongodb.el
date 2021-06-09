@@ -116,12 +116,17 @@
   (interactive (list (transient-args 'mongodb-collection-insert-many-transient)))
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
-        (coll mongodb-collection-current))
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
     (mongodb-query-input
      "documents to insert"
      shell-process
      (lambda (docs)
-       (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args)))
+       (let ((result
+              (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
      t
      'array)))
 
