@@ -139,29 +139,29 @@
 (define-transient-command mongodb-collection-find-transient ()
   "Find command"
   ["Options"
-   ("l" "Limit the number of documents returned" "limit=")
-   ("s" "Skip this number of documents from the query" "skip=")
-   ("o" "Order the returned documents" "sort=")
-   ("p" "Specify the fields to return in the documents that match the query filter" "projection=")
-   ("P" "Specify the read preference to use for the find" "readPref=")
-   ("r" "Specify the read concern to use for the find" "readConcern=")
-   ("m" "Limit the cumulative time for processing operations for the find" "maxTimeMS=")
-   ("c" "Attach a comment to the query" "comment=")
-   ("h" "Specify the index to use for the find" "hint=")]
+   ("l" "Limit number of documents" "limit=")
+   ("s" "Skip number of documents" "skip=")
+   ("o" "Order the documents by" "sort=")
+   ("p" "Projection" "projection=")
+   ("rp" "Read preference" "readPref=")
+   ("rc" "Read concern" "readConcern=")
+   ("m" "Limit the cumulative processing time" "maxTimeMS=")
+   ("c" "Attach a comment" "comment=")
+   ("h" "The index hint" "hint=")]
   ["Find"
    ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
 
 (define-transient-command mongodb-collection-insert-one-transient ()
   "insertOne command"
   ["Options"
-   ("w" "Specify a document expressing the write concern" "writeConcern=")]
+   ("w" "Write concern" "writeConcern=")]
   ["Insert One"
    ("i" "Prompt for a document and insert it" mongodb-collection--insert-one)])
 
 (define-transient-command mongodb-collection-insert-many-transient ()
   "insertMany command"
   ["Options"
-   ("w" "Specify a document expressing the write concern" "writeConcern=")
+   ("w" "Write concern" "writeConcern=")
    ("o" mongodb-insert-many-ordered)]
   ["Insert Many"
    ("i" "Prompt for an array of documents and insert them" mongodb-collection--insert-many)])
