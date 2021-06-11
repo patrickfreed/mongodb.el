@@ -38,10 +38,12 @@
    CLOSED: [2021-11-21 Sun 19:17]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
      not needed with collection explorer
-** CANCELLED toggle collapsed, expanded
+** DONE toggle collapsed, expanded
    CLOSED: [2021-11-21 Sun 19:17]
+   - State "DONE"       from "CANCELLED"  [2021-11-26 Fri 01:29]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
      not needed with collection explorer
+     turns out I already did this
 ** CANCELLED delete document via "x" on hover
    CLOSED: [2021-11-21 Sun 19:19]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:19] \\
@@ -102,6 +104,7 @@
    This should behave like dired for renaming files
 ** DONE backwards navigation
    CLOSED: [2021-11-22 Mon 00:10]
+** TODO pretty print collection options
 
 * TODO clean up shell elisp API
 

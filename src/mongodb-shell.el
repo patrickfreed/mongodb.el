@@ -2,6 +2,8 @@
 
 (provide 'mongodb-shell)
 
+(require 'cl-lib)
+
 (cl-defstruct mongodb-shell
   uri
   process
@@ -111,6 +113,16 @@
         collect (prog1 (buffer-substring (line-beginning-position) (line-end-position))
                   (forward-line)))
        (and has-more uuid)))))
+
+(cl-defun mongodb-shell-find-cursor (shell db coll filter &key limit)
+  (mongodb-shell-command shell (concat "use " db))
+  (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
+         (cursor-name (concat "cursor_" uuid))
+         (command (format "let %s = db.%s.find(%s)" cursor-name coll filter)))
+    (when limit
+      (setq command (concat command (format ".limit(%s)" limit))))
+    (mongodb-shell-command shell command)
+    (make-mongodb-cursor :shell shell :name cursor-name)))
 
 (defun mongodb-shell-find-pretty (shell db coll filter &optional args)
   (mongodb-shell-command shell (concat "use " db))
@@ -230,7 +242,6 @@
 
 (defun mongodb-shell-cursor-has-next-p (shell cursor-id)
   (let ((output (mongodb-shell-command shell (format "cursor%s.hasNext()" cursor-id))))
-    (message "output: %S" output)
     (string= output "true")))
 
 (defun mongodb-shell-cursor-next (shell cursor-id)
