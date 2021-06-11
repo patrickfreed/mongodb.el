@@ -1,0 +1,13 @@
+* DONE find
+
+* TODO insertion
+  - [X] post-query completion hook for refreshing collection buffer
+  - [ ] hide multi-line dot output from shell
+
+* TODO aggregation
+  - [ ] commands for individual aggregation stages
+
+* TODO query building improvements
+  - [ ] line up cursor in query input buffer
+  - [ ] add commands for inserting common operators (e.g. { "$gt": })
+  - [ ] autocomplete / company backend

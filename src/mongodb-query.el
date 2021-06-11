@@ -7,14 +7,22 @@
 (defvar-local mongodb-query-body nil)
 (defvar-local mongodb-query-cursor-id nil)
 (defvar-local mongodb-is-cursor-result nil)
+(defvar-local mongodb-query-post-hook nil)
 
-(defun mongodb-query-input (title shell body &optional no-cursor input-type)
+(defun mongodb-query-input (title shell body &optional input-type post-query-hook)
+  (mongodb-query--setup title shell body t input-type post-query-hook))
+
+(defun mongodb-command-input (title shell body &optional input-type post-query-hook)
+  (mongodb-query--setup title shell body nil input-type post-query-hook))
+
+(defun mongodb-query--setup (title shell body &optional is-cursor input-type post-query-hook)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
   (mongodb-query-mode)
   (setq-local mongodb-shell-process shell)
   (setq-local mongodb-query-body body)
-  (setq-local mongodb-is-cursor-result (not no-cursor))
+  (setq-local mongodb-is-cursor-result is-cursor)
+  (setq-local mongodb-query-post-hook post-query-hook)
   (insert "// " title "\n")
   (insert "// Press C-c C-c to submit." "\n")
   (cond
@@ -27,7 +35,8 @@
   (flush-lines "^//")
   (let ((query-result (funcall mongodb-query-body (buffer-string)))
         (shell-process mongodb-shell-process)
-        (is-cursor-result mongodb-is-cursor-result))
+        (is-cursor-result mongodb-is-cursor-result)
+        (post-query-hook mongodb-query-post-hook))
     (kill-buffer "*mongodb query input*")
     (switch-to-buffer-other-window (get-buffer-create "*mongodb query results*"))
     (erase-buffer)
@@ -39,7 +48,10 @@
           (while (mongodb-shell-cursor-live-pretty-p shell-process cursor-id)
             (insert (mongodb-shell-cursor-pretty-next shell-process cursor-id)))
           (goto-char (point-min)))
-      (insert query-result))))
+      (insert query-result))
+    (when post-query-hook
+      (save-excursion
+        (funcall post-query-hook)))))
 
 (defvar mongodb-query-mode-map nil "Keymap for MongoDB query input buffers")
 (progn

@@ -10,9 +10,11 @@
 (defvar-local mongodb-collection-current nil)
 (defvar-local mongodb-database-current nil)
 
-(defun mongodb-view-collection (mongo-shell db-name coll-name)
-  (switch-to-buffer
-   (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
+(defun mongodb-view-collection (mongo-shell db-name coll-name &optional is-refresh)
+  (let ((buf (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name))))
+    (if is-refresh
+        (set-buffer buf)
+      (switch-to-buffer buf)))
   (mongodb-collection-mode)
   (read-only-mode -1)
   (setq display-line-numbers nil)
@@ -53,11 +55,12 @@
 
 (defun mongodb-collection-refresh (&optional silent)
   (interactive)
-  (when (not silent)
-    (message "refreshing..."))
-  (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current)
-  (when (not silent)
-    (message "refreshing...done")))
+  (save-excursion
+    (when (not silent)
+      (message "refreshing..."))
+    (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current t)
+    (when (not silent)
+      (message "refreshing...done"))))
 
 (defun mongodb-document-string (doc)
   (with-temp-buffer
@@ -102,15 +105,15 @@
         (coll mongodb-collection-current)
         (buf (current-buffer)))
     (message "inserting into collection %s" mongodb-collection-current)
-    (mongodb-query-input
+    (mongodb-command-input
      "document to insert"
      shell-process
      (lambda (doc)
-       (let ((result (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args))))
-         (with-current-buffer buf
-           (mongodb-collection-refresh t))
-         result))
-     t)))
+       (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args)))
+     'document
+     (lambda ()
+       (with-current-buffer buf
+         (mongodb-collection-refresh t))))))
 
 (defun mongodb-collection--insert-many (&optional args)
   (interactive (list (transient-args 'mongodb-collection-insert-many-transient)))
@@ -118,17 +121,15 @@
         (db mongodb-database-current)
         (coll mongodb-collection-current)
         (buf (current-buffer)))
-    (mongodb-query-input
+    (mongodb-command-input
      "documents to insert"
      shell-process
      (lambda (docs)
-       (let ((result
-              (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args))))
-         (with-current-buffer buf
-           (mongodb-collection-refresh t))
-         result))
-     t
-     'array)))
+       (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args)))
+     'array
+     (lambda ()
+       (with-current-buffer buf
+         (mongodb-collection-refresh t))))))
 
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
