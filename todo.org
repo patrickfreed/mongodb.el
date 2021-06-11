@@ -1,8 +1,9 @@
 * DONE find
 
-* TODO insertion
+* DONE insertion
+  CLOSED: [2021-06-10 Thu 23:57]
   - [X] post-query completion hook for refreshing collection buffer
-  - [ ] hide multi-line dot output from shell
+  - [X] hide multi-line dot output from shell
 
 * TODO aggregation
   - [ ] commands for individual aggregation stages

@@ -33,6 +33,8 @@
   (interactive)
   (goto-char (point-min))
   (flush-lines "^//")
+  (subst-char-in-region (point-min) (point-max) ?\n ?\s)
+  (subst-char-in-region (point-min) (point-max) ?\r ?\s)
   (let ((query-result (funcall mongodb-query-body (buffer-string)))
         (shell-process mongodb-shell-process)
         (is-cursor-result mongodb-is-cursor-result)
