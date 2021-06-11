@@ -12,3 +12,7 @@
   - [ ] line up cursor in query input buffer
   - [ ] add commands for inserting common operators (e.g. { "$gt": })
   - [ ] autocomplete / company backend
+
+* TODO document preview improvements
+  - [ ] support viewing more pages
+  - [ ] pretty print documents

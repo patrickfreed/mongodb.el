@@ -111,6 +111,13 @@
                   (forward-line)))
        (and has-more uuid)))))
 
+(defun mongodb-shell-find-cursor (shell db coll filter)
+  (mongodb-shell-command shell (concat "use " db))
+  (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
+         (cursor-name (concat "cursor_" uuid)))
+    (mongodb-shell-command shell (format "let %s = db.%s.find(%s)" cursor-name coll filter))
+    (make-mongodb-cursor :shell shell :name cursor-name)))
+
 (defun mongodb-shell-find-pretty (shell db coll filter &optional args)
   (mongodb-shell-command shell (concat "use " db))
   (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))

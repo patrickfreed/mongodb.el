@@ -4,13 +4,21 @@
 
 (require 'mongodb-shell)
 (require 'mongodb-query)
+(require 'mongodb-cursor)
 
 (require 'seq)
 
 (defvar-local mongodb-collection-current nil)
 (defvar-local mongodb-database-current nil)
+(defvar-local mongodb-collection-documents '())
+(defvar-local mongodb-collection-cursor nil)
 
-(defun mongodb-view-collection (mongo-shell db-name coll-name &optional is-refresh)
+(cl-defstruct mongodb-collection-doc
+  doc
+  collapsed
+  abbreviated)
+
+(defun mongodb-view-collection (mongo-shell db-name coll-name &optional is-refresh documents)
   (let ((buf (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name))))
     (if is-refresh
         (set-buffer buf)
@@ -22,6 +30,17 @@
   (setq-local mongodb-shell-process mongo-shell)
   (setq-local mongodb-database-current db-name)
   (setq-local mongodb-collection-current coll-name)
+  (setq-local mongodb-collection-documents
+              (or documents
+                  (let ((cursor (mongodb-shell-find-cursor mongodb-shell-process db-name coll-name "{}"))
+                        (docs '()))
+                    (while (mongodb-cursor-has-next cursor)
+                      (setq docs (append docs (list (make-mongodb-collection-doc
+                                                     :doc (mongodb-cursor-next cursor)
+                                                     :collapsed nil
+                                                     :abbreviated t)))))
+                    docs)))
+  (message "num docs: %s" (length mongodb-collection-documents))
   (magit-insert-section (mongodb-collection-buffer-section)
     (magit-insert-section (mongodb-collection-info-section)
       (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
@@ -35,23 +54,96 @@
       (magit-insert-heading
         (propertize "Documents" 'face 'magit-section-heading)
         (propertize (format " (%d)" (mongodb-shell-collection-count mongodb-shell-process db-name coll-name))))
-      (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
-             (first-batch (car result))
-             (cursor-id (cdr result)))
-        (seq-do
-         (lambda (doc)
-           (magit-insert-section (mongodb-collection-document doc t)
-             (if (> (length doc) (window-width))
-                 (progn
-                   (magit-insert-heading
-                     (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
-                   (magit-insert-section (mongodb-collection-document-more doc t)
-                     (insert (mongodb-document-string doc) "\n")))
-               (insert (mongodb-document-string doc) "\n"))))
-         first-batch)
-        (when cursor-id
-          (insert-text-button "Type + to show more results")))))
+      (seq-do
+       (lambda (doc)
+         (magit-insert-section (mongodb-collection-document doc t)
+           (if (mongodb-collection-doc-collapsed doc)
+               (insert "{ ... }\n")
+             (let ((first) (more) (n-lines))
+               (with-temp-buffer
+                 (insert (mongodb-document-string (mongodb-collection-doc-doc doc)) "\n")
+                 (goto-char (point-min))
+                 (setq first
+                       (buffer-substring
+                        (point-min)
+                        (progn (forward-line 25) (point))))
+                 (when (> (count-lines (point-min) (point-max)) 25)
+                   (forward-line 1)
+                   (setq more (buffer-substring (point) (point-max)))
+                   (setq n-lines (- (count-lines (point-min) (point-max)) 25))))
+               (insert first)
+               (when more
+                 (if (mongodb-collection-doc-abbreviated doc)
+                     (progn
+                       (insert (propertize (format "\t...%s more lines collapsed\n" n-lines) 'face '('shadow italic)))
+                       (insert "}\n"))
+                   (insert more)))))))
+       mongodb-collection-documents)
+      ;; (let ((cursor (mongodb-shell-find-cursor mongodb-shell-process db-name coll-name "{}")))
+      ;;   (while (mongodb-cursor-has-next cursor)
+      ;;     (let ((doc (mongodb-cursor-next cursor)))
+      ;;       (magit-insert-section (mongodb-collection-document doc t)
+      ;;         (let ((first) (more) (n-lines))
+      ;;           (with-temp-buffer
+      ;;             (insert (mongodb-document-string doc) "\n")
+      ;;             (goto-char (point-min))
+      ;;             (setq first
+      ;;                   (buffer-substring
+      ;;                    (point-min)
+      ;;                    (progn (forward-line 25) (point))))
+      ;;             (when (> (count-lines (point-min) (point-max)) 25)
+      ;;               (forward-line 1)
+      ;;               (setq more (buffer-substring (point) (point-max)))
+      ;;               (setq n-lines (- (count-lines (point-min) (point-max)) 25))))
+      ;;           (insert first)
+      ;;           (when more
+      ;;             (insert (propertize (format "\t...%s more lines collapsed\n" n-lines) 'face '('shadow italic)))
+      ;;             (insert "}\n")
+      ;;             ))))))
+      ;; (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
+      ;;        (first-batch (car result))
+      ;;        (cursor-id (cdr result)))
+      ;;   (seq-do
+      ;;    (lambda (doc)
+      ;;      (magit-insert-section (mongodb-collection-document doc t)
+      ;;        (if (> (length doc) (window-width))
+      ;;            (progn
+      ;;              (magit-insert-heading
+      ;;                (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
+      ;;              (magit-insert-section (mongodb-collection-document-more doc t)
+      ;;                (insert (mongodb-document-string doc) "\n")))
+      ;;          (insert (mongodb-document-string doc) "\n"))))
+      ;;    first-batch)
+      ;;   (when cursor-id
+      ;;     (insert-text-button "Type + to show more results")))
+      ))
   (read-only-mode))
+
+(defun mongodb-collection-toggle-at-point ()
+  (interactive)
+  (let* ((section (magit-current-section))
+         (section-type (car (car (magit-section-ident section)))))
+    (if (eq 'mongodb-collection-document section-type)
+        (mongodb-collection-toggle-doc-at-point)
+      (magit-section-toggle section))))
+
+(defun mongodb-collection-expand-at-point ()
+  (interactive)
+  (let* ((section (magit-current-section))
+         (doc (cdr (car (magit-section-ident section)))))
+    (setf (mongodb-collection-doc-abbreviated doc) (not (mongodb-collection-doc-abbreviated doc)))
+    (let ((p (point)))
+      (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current nil mongodb-collection-documents)
+      (goto-char p))))
+
+(defun mongodb-collection-toggle-doc-at-point ()
+  (interactive)
+  (let* ((section (magit-current-section))
+         (doc (cdr (car (magit-section-ident section)))))
+    (setf (mongodb-collection-doc-collapsed doc) (not (mongodb-collection-doc-collapsed doc)))
+    (let ((p (point)))
+      (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current nil mongodb-collection-documents)
+      (goto-char p))))
 
 (defun mongodb-collection-refresh (&optional silent)
   (interactive)
@@ -193,6 +285,9 @@
       "im" 'mongodb-collection-insert-many-transient
       "f" 'mongodb-collection-find-transient
       "r" 'mongodb-collection-refresh
+      "z" 'mongodb-collection-expand-at-point
+      "<tab>" 'mongodb-collection-toggle-at-point
+      "TAB" 'mongodb-collection-toggle-at-point
       ;; "D" 'mongodb-collection--drop
       ))
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
@@ -202,6 +297,8 @@
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
   (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-refresh))
+  (define-key mongodb-collection-mode-map (kbd "<tab>") 'mongodb-collection-toggle-at-point)
+  (define-key mongodb-collection-mode-map (kbd "TAB") 'mongodb-collection-toggle-at-point)
 
 (define-derived-mode
   mongodb-collection-mode
