@@ -82,6 +82,12 @@
   (interactive)
   (mongodb-connect mongodb-uri))
 
+(define-transient-command mongodb-dispatch ()
+  "Basic commands"
+  ["Basic commands"
+   ("d" "View a database" mongodb-database--use-database)
+   ("q" "Quit" mongodb-database-quit)])
+
 (define-derived-mode
   mongodb-base-mode
   magit-section-mode
@@ -110,10 +116,12 @@
   (when (require 'evil nil t)
     (evil-define-key 'normal mongodb-mode-map
       (kbd "<RET>") 'mongodb-inspect-at-point
+      "?" 'mongodb-dispatch
       (kbd "r" ) 'mongodb-connect-refresh))
   ;; (define-key mongodb-mode-map [remap evil-previous-line] 'evil-previous-visual-line)
   ;; (define-key mongodb-mode-map [remap evil-next-line] 'evil-next-visual-line)
   ;; (define-key mongodb-mode-map (kbd "<tab>") 'magit-section-toggle)
+  (define-key mongodb-mode-map (kbd "?") 'mongodb-dispatch)
   (define-key mongodb-mode-map (kbd "r") 'mongodb-connect-refresh)
   (define-key mongodb-mode-map (kbd "<ret>") 'mongodb-inspect-at-point))
 
