@@ -9,47 +9,50 @@
 
 (defvar-local mongodb-collection-current nil)
 (defvar-local mongodb-database-current nil)
+(defvar-local mongodb-collection-prev-buffer nil)
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name)
-  (switch-to-buffer
-   (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
-  (mongodb-collection-mode)
-  (read-only-mode -1)
-  (setq display-line-numbers nil)
-  (erase-buffer)
-  (setq-local mongodb-shell-process mongo-shell)
-  (setq-local mongodb-database-current db-name)
-  (setq-local mongodb-collection-current coll-name)
-  (magit-insert-section (mongodb-collection-buffer-section)
-    (magit-insert-section (mongodb-collection-info-section)
-      (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
-      (mongodb--insert-header-line "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
-      (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
-      (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
-      (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
-      (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongodb-shell-process)))
-    (newline)
-    (magit-insert-section (mongodb-collection-documents)
-      (magit-insert-heading
-        (propertize "Documents" 'face 'magit-section-heading)
-        (propertize (format " (%d)" (mongodb-shell-collection-count mongodb-shell-process db-name coll-name))))
-      (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
-             (first-batch (car result))
-             (cursor-id (cdr result)))
-        (seq-do
-         (lambda (doc)
-           (magit-insert-section (mongodb-collection-document doc t)
-             (if (> (length doc) (window-width))
-                 (progn
-                   (magit-insert-heading
-                     (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
-                   (magit-insert-section (mongodb-collection-document-more doc t)
-                     (insert (mongodb-document-string doc) "\n")))
-               (insert (mongodb-document-string doc) "\n"))))
-         first-batch)
-        (when cursor-id
-          (insert-text-button "Type + to show more results")))))
-  (read-only-mode))
+  (let ((prev-buffer (current-buffer)))
+    (switch-to-buffer
+     (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
+    (mongodb-collection-mode)
+    (read-only-mode -1)
+    (setq display-line-numbers nil)
+    (erase-buffer)
+    (setq-local mongodb-collection-prev-buffer prev-buffer)
+    (setq-local mongodb-shell-process mongo-shell)
+    (setq-local mongodb-database-current db-name)
+    (setq-local mongodb-collection-current coll-name)
+    (magit-insert-section (mongodb-collection-buffer-section)
+      (magit-insert-section (mongodb-collection-info-section)
+        (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
+        (mongodb--insert-header-line "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
+        (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
+        (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
+        (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
+        (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongodb-shell-process)))
+      (newline)
+      (magit-insert-section (mongodb-collection-documents)
+        (magit-insert-heading
+          (propertize "Documents" 'face 'magit-section-heading)
+          (propertize (format " (%d)" (mongodb-shell-collection-count mongodb-shell-process db-name coll-name))))
+        (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
+               (first-batch (car result))
+               (cursor-id (cdr result)))
+          (seq-do
+           (lambda (doc)
+             (magit-insert-section (mongodb-collection-document doc t)
+               (if (> (length doc) (window-width))
+                   (progn
+                     (magit-insert-heading
+                       (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
+                     (magit-insert-section (mongodb-collection-document-more doc t)
+                       (insert (mongodb-document-string doc) "\n")))
+                 (insert (mongodb-document-string doc) "\n"))))
+           first-batch)
+          (when cursor-id
+            (insert-text-button "Type + to show more results")))))
+    (read-only-mode)))
 
 (defun mongodb-collection-refresh (&optional silent)
   (interactive)
@@ -130,14 +133,23 @@
      t
      'array)))
 
+(defun mongodb-collection-quit ()
+  (interactive)
+  (if mongodb-collection-prev-buffer
+      (let ((prev-buffer (current-buffer)))
+        (switch-to-buffer mongodb-collection-prev-buffer)
+        (kill-buffer prev-buffer))
+    (quit-window t)))
+
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
   ["Collection operations"
    ("c" "View another collection" mongodb-collection--use-collection)
    ("f" "find" mongodb-collection-find-transient)
-   ("io" "insertOne" mongodb-collection-insert-one-transient)
-   ("im" "insertMany" mongodb-collection-insert-many-transient)
+   ("i" "insertOne" mongodb-collection-insert-one-transient)
+   ("I" "insertMany" mongodb-collection-insert-many-transient)
    ("r" "Refresh" mongodb-collection-refresh)
+   ("q" "Quit" mongodb-collection-quit)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -188,15 +200,17 @@
     (evil-define-key 'normal mongodb-collection-mode-map
       "?" 'mongodb-collection-dispatch
       "c" 'mongodb-collection--use-collection
-      "io" 'mongodb-collection-insert-one-transient
-      "im" 'mongodb-collection-insert-many-transient
+      "i" 'mongodb-collection-insert-one-transient
+      "I" 'mongodb-collection-insert-many-transient
       "f" 'mongodb-collection-find-transient
       "r" 'mongodb-collection-refresh
+      "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
       ))
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
-  (define-key mongodb-collection-mode-map (kbd "im") 'mongodb-collection-insert-one-transient)
-  (define-key mongodb-collection-mode-map (kbd "io") 'mongodb-collection-insert-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "i") 'mongodb-collection-insert-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "I") 'mongodb-collection-insert-many-transient)
+  (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)

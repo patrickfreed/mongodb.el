@@ -66,6 +66,7 @@
   (if (re-search-forward "^\\([^ ]+\\)[ ]+\\([0-9.]+\\)GB$" nil t)
       (cons (cons (match-string 1) (string-to-number (match-string 2))) (mongodb--parse-databases))
     '()))
+
 (defun mongodb-shell-list-databases (shell)
   (with-temp-buffer
     (message "listing databases...")
