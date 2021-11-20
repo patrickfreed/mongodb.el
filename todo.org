@@ -53,5 +53,16 @@
    e.g. for a find query input, bind C-c g to insert "{ "$gt": <point> }" or something
 ** TODO better syntax highlighting in query input
 
+* misc
+** TODO add background to header section
+
+* TODO clean up shell elisp API
+
+* Integrated shell
+** TODO drop into mongo shell
+** TODO autocomplete
+** TODO syntax highlighting
+
 * RS config
 ** TODO open up rsconfig, make edits, submit
+
