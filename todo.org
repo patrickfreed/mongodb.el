@@ -1,0 +1,55 @@
+* Connection page
+** DONE display databses / collections
+** DONE display basic connection / topology info
+** TODO view a collection (command)
+** TODO view a database (command)
+** TODO display set name for replica sets
+** TODO display number of shards/addresses for sharded clusters
+
+* Collection operations
+** DONE insertOne
+** DONE insertMany
+** DONE find
+** DONE aggregate
+** DONE switch to another collection
+** DONE quit window
+** TODO update command
+** TODO drop
+** TODO create index
+   
+* Collection preview
+** TODO view more via '+'
+** TODO toggle collapsed, expanded
+   
+* Collection explorer
+** TODO buffer to explore collections contents
+   This should be paginated, pretty
+** TODO edit individual document applies update server side
+** TODO delete individual document server side
+** TODO batch delete documents dired style
+
+* Database operations
+** TODO rename collection
+   This should behave like dired for renaming files
+** TODO drop collection(s)
+   This should behave like dired for deleting files
+** TODO switch to another database
+** TODO generic runCommand
+
+* Query results
+** DONE basic display
+** TODO repeat prior query (with input)
+
+* Auth
+** TODO display authenticated user in connection window
+** TODO use secure method of inputing username/password
+
+* Query input
+** TODO autocomplete find query operators
+** TODO autocomplete aggregation stages
+** TODO command-specific modes for query input
+   e.g. for a find query input, bind C-c g to insert "{ "$gt": <point> }" or something
+** TODO better syntax highlighting in query input
+
+* RS config
+** TODO open up rsconfig, make edits, submit
