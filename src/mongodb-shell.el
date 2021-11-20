@@ -9,7 +9,7 @@
   server-version
   topology-type)
 
-(defconst mongodb-shell-prompt-regex "^\\([^:]*:\\)?\\(PRIMARY\\|SECONDARY\\|ARBITER\\|mongos\\)?> $")
+(defconst mongodb-shell-prompt-regex "^\\([^\n]*:\\)?\\(PRIMARY\\|SECONDARY\\|ARBITER\\|mongos\\)?> $")
 
 (defun mongodb-shell-start (uri)
   (with-current-buffer (get-buffer-create "*mongodb-shell-process*")

@@ -8,6 +8,7 @@
 (require 'mongodb-database)
 
 (defvar-local mongodb-shell-process nil)
+(defvar-local mongodb-uri nil)
 
 (defun mongodb--insert-header-line (key value)
   (magit-insert-section (mongodb-header)
@@ -33,6 +34,7 @@
   (let ((inhibit-read-only t))
     (erase-buffer)
     (mongodb-mode)
+    (setq mongodb-uri uri)
     (when (not mongodb-shell-process)
       (setq-local mongodb-shell-process (mongodb-shell-start uri)))
     (magit-insert-section (mongodb-buffer)
@@ -76,6 +78,9 @@
   (when-let ((ns (magit-section-value-if 'mongodb-collection-section)))
     (mongodb-view-collection mongodb-shell-process (alist-get 'db ns) (alist-get 'coll ns))))
 
+(defun mongodb-connect-refresh ()
+  (interactive)
+  (mongodb-connect mongodb-uri))
 
 (define-derived-mode
   mongodb-base-mode
@@ -104,10 +109,11 @@
   (setq mongodb-mode-map (make-sparse-keymap))
   (when (require 'evil nil t)
     (evil-define-key 'normal mongodb-mode-map
-      (kbd "<RET>") 'mongodb-inspect-at-point))
+      (kbd "<RET>") 'mongodb-inspect-at-point
+      (kbd "r" ) 'mongodb-connect-refresh))
   ;; (define-key mongodb-mode-map [remap evil-previous-line] 'evil-previous-visual-line)
   ;; (define-key mongodb-mode-map [remap evil-next-line] 'evil-next-visual-line)
   ;; (define-key mongodb-mode-map (kbd "<tab>") 'magit-section-toggle)
-  (define-key mongodb-mode-map (kbd "r") (lambda () (interactive) (mongodb-connect "mongodb://localhost:27017/blah")))
+  (define-key mongodb-mode-map (kbd "r") 'mongodb-connect-refresh)
   (define-key mongodb-mode-map (kbd "<ret>") 'mongodb-inspect-at-point))
 
