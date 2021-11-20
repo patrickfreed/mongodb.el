@@ -164,7 +164,6 @@
    ("i" "insertOne" mongodb-collection-insert-one-transient)
    ("I" "insertMany" mongodb-collection-insert-many-transient)
    ("r" "Refresh" mongodb-collection-refresh)
-   ("q" "Quit" mongodb-collection-quit)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 

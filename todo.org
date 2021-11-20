@@ -3,7 +3,8 @@
 ** DONE display basic connection / topology info
 ** DONE view a database (command)
    CLOSED: [2021-11-20 Sat 01:02]
-** TODO view a collection (command)
+** DONE view a collection (command)
+   CLOSED: [2021-11-20 Sat 01:34]
 ** TODO display set name for replica sets
 ** TODO display number of shards/addresses for sharded clusters
 

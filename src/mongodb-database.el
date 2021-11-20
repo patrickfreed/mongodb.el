@@ -80,8 +80,7 @@
   ["Database operations"
    ("r" "Run a database command" mongodb-database--run-command)
    ("d" "View another database" mongodb-database--use-database)
-   ("D" "Drop this database" mongodb-database--drop)
-   ("q" "Quit" mongodb-database-quit)])
+   ("D" "Drop this database" mongodb-database--drop)])
 
 (defvar mongodb-database-mode-map nil "Keymap for MongoDB database buffers")
 

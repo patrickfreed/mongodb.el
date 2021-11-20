@@ -9,6 +9,7 @@
 
 (defvar-local mongodb-shell-process nil)
 (defvar-local mongodb-uri nil)
+(defvar-local mongodb-namespaces '())
 
 (defun mongodb--insert-header-line (key value)
   (magit-insert-section (mongodb-header)
@@ -63,12 +64,21 @@
                      (format " (%d)" (length colls)))
                    (seq-do
                     (lambda (coll)
+                      (setq-local mongodb-namespaces (cons (format "%s.%s" (car db) coll) mongodb-namespaces))
                       (magit-insert-section (mongodb-collection-section `((db . ,(car db)) (coll . ,coll)))
                         (insert (propertize
                                  (concat (mongodb--make-indentation 2) coll "\n")
                                  'face 'magit-branch-remote))))
                     colls)))))
            dbs))))))
+
+(defun mongodb--view-collection (namespace)
+  (interactive
+   (list (completing-read "View collection: " mongodb-namespaces)))
+  (let* ((parts (split-string namespace "\\."))
+         (db (car parts))
+         (coll (mapconcat 'identity (cdr parts) ".")))
+    (mongodb-view-collection mongodb-shell-process db coll)))
 
 (defun mongodb-inspect-at-point ()
   (interactive)
@@ -86,7 +96,7 @@
   "Basic commands"
   ["Basic commands"
    ("d" "View a database" mongodb-database--use-database)
-   ("q" "Quit" mongodb-database-quit)])
+   ("c" "View a collection" mongodb--view-collection)])
 
 (define-derived-mode
   mongodb-base-mode
@@ -117,11 +127,15 @@
     (evil-define-key 'normal mongodb-mode-map
       (kbd "<RET>") 'mongodb-inspect-at-point
       "?" 'mongodb-dispatch
+      "d" 'mongodb-database--use-database
+      "c" 'mongodb--view-collection
       (kbd "r" ) 'mongodb-connect-refresh))
   ;; (define-key mongodb-mode-map [remap evil-previous-line] 'evil-previous-visual-line)
   ;; (define-key mongodb-mode-map [remap evil-next-line] 'evil-next-visual-line)
   ;; (define-key mongodb-mode-map (kbd "<tab>") 'magit-section-toggle)
   (define-key mongodb-mode-map (kbd "?") 'mongodb-dispatch)
   (define-key mongodb-mode-map (kbd "r") 'mongodb-connect-refresh)
+  (define-key mongodb-mode-map (kbd "d") 'mongodb-database--use-database)
+  (define-key mongodb-mode-map (kbd "c") 'mongodb--view-collection)
   (define-key mongodb-mode-map (kbd "<ret>") 'mongodb-inspect-at-point))
 
