@@ -87,6 +87,20 @@
        (lambda (filter)
          (mongodb-shell-find-pretty shell-process db coll filter pairs))))))
 
+(defun mongodb-collection--aggregate (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-aggregate-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current))
+    (let ((pairs (seq-map (lambda (kvp) (split-string kvp "=")) args)))
+      (mongodb-query-input
+       "aggregation pipeline"
+       shell-process
+       (lambda (pipeline)
+         (mongodb-shell-aggregate-pretty shell-process db coll pipeline pairs))
+       nil
+       'array))))
+
 (defun mongodb-args-to-document (args)
   (concat
    "{"
@@ -146,6 +160,7 @@
   ["Collection operations"
    ("c" "View another collection" mongodb-collection--use-collection)
    ("f" "find" mongodb-collection-find-transient)
+   ("a" "aggregate" mongodb-collection-aggregate-transient)
    ("i" "insertOne" mongodb-collection-insert-one-transient)
    ("I" "insertMany" mongodb-collection-insert-many-transient)
    ("r" "Refresh" mongodb-collection-refresh)
@@ -167,6 +182,20 @@
    ("h" "The index hint" "hint=")]
   ["Find"
    ("f" "Prompt for filter and execute the find" mongodb-collection--find)])
+
+(define-transient-command mongodb-collection-aggregate-transient ()
+  "Aggregate command"
+  ["Options"
+   ("l" "Limit number of documents" "limit=")
+   ("s" "Skip number of documents" "skip=")
+   ("o" "Order the documents by" "sort=")
+   ("rp" "Read preference" "readPref=")
+   ("rc" "Read concern" "readConcern=")
+   ("m" "Limit the cumulative processing time" "maxTimeMS=")
+   ("c" "Attach a comment" "comment=")
+   ("h" "The index hint" "hint=")]
+  ["Aggregate"
+   ("a" "Prompt for a pipeline and execute the aggregate" mongodb-collection--aggregate)])
 
 (define-transient-command mongodb-collection-insert-one-transient ()
   "insertOne command"
