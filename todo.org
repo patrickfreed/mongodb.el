@@ -24,6 +24,7 @@
 ** TODO deleteMany
 ** TODO drop
 ** TODO create index
+** TODO rationalize arguments
    
 * Collection preview
 ** TODO view more via '+'
