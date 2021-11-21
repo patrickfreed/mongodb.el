@@ -181,6 +181,14 @@
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.replaceOne(%s, %s)" coll filter-replacement (or args "{}"))))
 
+(defun mongodb-shell-delete-one (shell db coll filter &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.deleteOne(%s, %s)" coll filter (or args "{}"))))
+
+(defun mongodb-shell-delete-many (shell db coll filter &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.deleteMany(%s, %s)" coll filter (or args "{}"))))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 

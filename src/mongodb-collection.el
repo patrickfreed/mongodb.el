@@ -192,6 +192,38 @@
      :num-inputs 2
      :headings '("Filter document" "Replacement document"))))
 
+(defun mongodb-collection--delete-one (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-delete-one-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (mongodb-query-input
+     "Enter a filter document"
+     shell-process
+     (lambda (filter)
+       (let ((result (mongodb-shell-delete-one shell-process db coll filter (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
+     :no-cursor t)))
+
+(defun mongodb-collection--delete-many (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-delete-one-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (mongodb-query-input
+     "Enter a filter document"
+     shell-process
+     (lambda (filter)
+       (let ((result (mongodb-shell-delete-many shell-process db coll filter (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
+     :no-cursor t)))
+
 (defun mongodb-collection-quit ()
   (interactive)
   (if mongodb-collection-prev-buffer
@@ -211,6 +243,8 @@
    ("u" "updateOne" mongodb-collection-update-one-transient)
    ("U" "updateMany" mongodb-collection-update-many-transient)
    ("r" "replaceOne" mongodb-collection-replace-one-transient)
+   ("d" "deleteOne" mongodb-collection-delete-one-transient)
+   ("D" "deleteMany" mongodb-collection-delete-many-transient)
    ("gr" "Refresh" mongodb-collection-refresh)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
@@ -283,6 +317,20 @@
   ["Replace One"
    ("r" "Prompt for a filter document and a replacement document" mongodb-collection--replace-one)])
 
+(define-transient-command mongodb-collection-delete-one-transient ()
+  "deleteOne command"
+  ["Options"
+   ("w" "Write concern" "writeConcern=")]
+  ["Delete One"
+   ("d" "Prompt for a filter document and execute the delete" mongodb-collection--delete-one)])
+
+(define-transient-command mongodb-collection-delete-many-transient ()
+  "deleteMany command"
+  ["Options"
+   ("w" "Write concern" "writeConcern=")]
+  ["Delete Many"
+   ("d" "Prompt for a filter document and execute the delete" mongodb-collection--delete-many)])
+
 (transient-define-argument mongodb-update-upsert ()
   :description "upsert (default false)"
   :class 'transient-switches
@@ -313,6 +361,8 @@
       "u" 'mongodb-collection-update-one-transient
       "U" 'mongodb-collection-update-many-transient
       "r" 'mongodb-collection-replace-one-transient
+      "d" 'mongodb-collection-delete-one-transient
+      "D" 'mongodb-collection-delete-many-transient
       "f" 'mongodb-collection-find-transient
       "a" 'mongodb-collection-aggregate-transient
       "gr" 'mongodb-collection-refresh
@@ -325,6 +375,8 @@
   (define-key mongodb-collection-mode-map (kbd "u") 'mongodb-collection-update-one-transient)
   (define-key mongodb-collection-mode-map (kbd "U") 'mongodb-collection-update-many-transient)
   (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-replace-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "d") 'mongodb-collection-delete-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection-delete-many-transient)
   (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)

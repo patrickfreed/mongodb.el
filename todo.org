@@ -21,8 +21,10 @@
    CLOSED: [2021-11-21 Sun 01:26]
 ** DONE replaceOne command
    CLOSED: [2021-11-21 Sun 16:58]
-** TODO deleteOne
-** TODO deleteMany
+** DONE deleteOne
+   CLOSED: [2021-11-21 Sun 17:07]
+** DONE deleteMany
+   CLOSED: [2021-11-21 Sun 17:07]
 ** TODO drop
 ** TODO create index
 ** TODO rationalize arguments
@@ -30,6 +32,7 @@
 * Collection preview
 ** TODO view more via '+'
 ** TODO toggle collapsed, expanded
+** TODO show indexes
    
 * Collection explorer
 ** TODO buffer to explore collections contents
