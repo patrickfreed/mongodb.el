@@ -1,4 +1,4 @@
-* Connection page
+* TODO Connection page
 ** DONE display databses / collections
 ** DONE display basic connection / topology info
 ** DONE view a database (command)
@@ -8,7 +8,7 @@
 ** TODO display set name for replica sets
 ** TODO display number of shards/addresses for sharded clusters
 
-* Collection operations
+* DONE Collection operations
 ** DONE insertOne
 ** DONE insertMany
 ** DONE find
@@ -29,9 +29,10 @@
    CLOSED: [2021-11-21 Sun 17:16]
 ** DONE create index
    CLOSED: [2021-11-21 Sun 18:52]
-** TODO rationalize arguments
+** DONE rationalize arguments
+   CLOSED: [2021-11-21 Sun 18:56]
    
-* Collection preview
+* TODO Collection preview
 ** TODO view more via '+'
 ** TODO toggle collapsed, expanded
 ** TODO delete index via "x" on hover
@@ -39,14 +40,14 @@
 ** DONE show indexes
    CLOSED: [2021-11-21 Sun 18:52]
    
-* Collection explorer
+* TODO Collection explorer
 ** TODO buffer to explore collections contents
    This should be paginated, pretty
 ** TODO edit individual document applies update server side
 ** TODO delete individual document server side
 ** TODO batch delete documents dired style
 
-* Database operations
+* TODO Database operations
 ** TODO rename collection
    This should behave like dired for renaming files
 ** TODO drop collection(s)
@@ -54,7 +55,7 @@
 ** TODO switch to another database
 ** TODO generic runCommand
 
-* Query input
+* TODO Query input
 ** TODO space out {} and [] for prettier input
 ** TODO autocomplete find query operators
 ** TODO autocomplete aggregation stages
@@ -62,25 +63,25 @@
    e.g. for a find query input, bind C-c g to insert "{ "$gt": <point> }" or something
 ** TODO better syntax highlighting in query input
 
-* Query results
+* TODO Query results
 ** DONE basic display
 ** TODO repeat prior query (with input)
 ** TODO display message indicating no results were found
 
-* Auth
+* TODO Auth
 ** TODO display authenticated user in connection window
 ** TODO use secure method of inputing username/password
 
-* misc
+* TODO misc
 ** TODO add background to header section
 ** TODO use database from connection string
 
 * TODO clean up shell elisp API
 
-* Integrated shell
+* TODO Integrated shell
 ** TODO drop into mongo shell
 ** TODO autocomplete
 ** TODO syntax highlighting
 
-* RS config
+* TODO RS config
 ** TODO open up rsconfig, make edits, submit
