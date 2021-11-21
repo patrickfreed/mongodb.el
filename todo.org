@@ -25,7 +25,8 @@
    CLOSED: [2021-11-21 Sun 17:07]
 ** DONE deleteMany
    CLOSED: [2021-11-21 Sun 17:07]
-** TODO drop
+** DONE drop
+   CLOSED: [2021-11-21 Sun 17:16]
 ** TODO create index
 ** TODO rationalize arguments
    

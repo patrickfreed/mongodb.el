@@ -189,6 +189,10 @@
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.deleteMany(%s, %s)" coll filter (or args "{}"))))
 
+(defun mongodb-shell-drop-collection (shell db coll &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.drop(%s)" coll (or args "{}"))))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 

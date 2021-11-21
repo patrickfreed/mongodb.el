@@ -224,6 +224,15 @@
          result))
      :no-cursor t)))
 
+(defun mongodb-collection--drop (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-drop-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (mongodb-shell-drop-collection shell-process db coll (mongodb-args-to-document args))
+    (mongodb-collection-quit)))
+
 (defun mongodb-collection-quit ()
   (interactive)
   (if mongodb-collection-prev-buffer
@@ -245,6 +254,7 @@
    ("r" "replaceOne" mongodb-collection-replace-one-transient)
    ("d" "deleteOne" mongodb-collection-delete-one-transient)
    ("D" "deleteMany" mongodb-collection-delete-many-transient)
+   ("X" "drop" mongodb-collection-drop-transient)
    ("gr" "Refresh" mongodb-collection-refresh)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
@@ -331,6 +341,13 @@
   ["Delete Many"
    ("d" "Prompt for a filter document and execute the delete" mongodb-collection--delete-many)])
 
+(define-transient-command mongodb-collection-drop-transient ()
+  "drop command"
+  ["Options"
+   ("w" "Write concern" "writeConcern=")]
+  ["Drop Collection"
+   ("X" "Drop this collection" mongodb-collection--drop)])
+
 (transient-define-argument mongodb-update-upsert ()
   :description "upsert (default false)"
   :class 'transient-switches
@@ -365,6 +382,7 @@
       "D" 'mongodb-collection-delete-many-transient
       "f" 'mongodb-collection-find-transient
       "a" 'mongodb-collection-aggregate-transient
+      "X" 'mongodb-collection-drop-transient
       "gr" 'mongodb-collection-refresh
       "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
@@ -380,7 +398,7 @@
   (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)
-  ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
+  (define-key mongodb-collection-mode-map (kbd "X") 'mongodb-collection-drop-transient)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
   (define-key mongodb-collection-mode-map (kbd "gr") 'mongodb-collection-refresh))
 
