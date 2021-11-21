@@ -27,13 +27,17 @@
    CLOSED: [2021-11-21 Sun 17:07]
 ** DONE drop
    CLOSED: [2021-11-21 Sun 17:16]
-** TODO create index
+** DONE create index
+   CLOSED: [2021-11-21 Sun 18:52]
 ** TODO rationalize arguments
    
 * Collection preview
 ** TODO view more via '+'
 ** TODO toggle collapsed, expanded
-** TODO show indexes
+** TODO delete index via "x" on hover
+** TODO delete document via "x" on hover
+** DONE show indexes
+   CLOSED: [2021-11-21 Sun 18:52]
    
 * Collection explorer
 ** TODO buffer to explore collections contents

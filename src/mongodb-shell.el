@@ -193,6 +193,20 @@
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.drop(%s)" coll (or args "{}"))))
 
+(defun mongodb-shell-list-indexes (shell db coll &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
+         (command (format
+                   "let cursor%s = new DBCommandCursor(db, db.runCommand({ \"listIndexes\": %S }))"
+                   uuid
+                   coll)))
+    (mongodb-shell-command shell (concat command ";"))
+    (mongodb-shell-cursor-to-list shell uuid)))
+
+(defun mongodb-shell-create-index (shell db coll keys &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.createIndex(%s, %s)" coll keys (or args "{}"))))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 
@@ -204,13 +218,18 @@
         (buffer-substring (point-min) (match-beginning 0))
       (buffer-string))))
 
-(defun mongodb-shell-cursor-live-p (shell cursor-id)
-  (string= (mongodb-shell-command shell (format "cursors[%S].isExhausted()" cursor-id)) "false"))
+(defun mongodb-shell-cursor-has-next-p (shell cursor-id)
+  (let ((output (mongodb-shell-command shell (format "cursor%s.hasNext()" cursor-id))))
+    (message "output: %S" output)
+    (string= output "true")))
 
 (defun mongodb-shell-cursor-next (shell cursor-id)
   (with-temp-buffer
-    (insert (mongodb-shell-command shell (format "cursors[%S]" cursor-id)))
-    (goto-char (point-min))
-    (if (re-search-forward "^Type \"it\" for more" nil t)
-        (buffer-substring (point-min) (match-beginning 0))
-      (buffer-string))))
+    (insert (mongodb-shell-command shell (format "cursor%s.next()" cursor-id)))
+    (buffer-string)))
+
+(defun mongodb-shell-cursor-to-list (shell cursor-id)
+  (let ((results))
+    (while (mongodb-shell-cursor-has-next-p shell cursor-id)
+      (setq results (append results (list (mongodb-shell-cursor-next shell cursor-id)))))
+    results))

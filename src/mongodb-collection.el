@@ -51,7 +51,18 @@
                  (insert (mongodb-document-string doc) "\n"))))
            first-batch)
           (when cursor-id
-            (insert-text-button "Type + to show more results")))))
+            (insert-text-button "Type + to show more results"))))
+      (newline)
+      (let ((indexes (mongodb-shell-list-indexes mongodb-shell-process db-name coll-name)))
+        (magit-insert-section (mongodb-collection-indexes)
+          (magit-insert-heading
+            (propertize "Indexes" 'face 'magit-section-heading)
+            (propertize (format " (%d)" (length indexes))))
+          (seq-do
+           (lambda (index)
+             (magit-insert-section (mongodb-collection-index index t)
+               (insert (mongodb-document-string index) "\n")))
+           indexes))))
     (read-only-mode)))
 
 (defun mongodb-collection-refresh (&optional silent)
@@ -224,6 +235,22 @@
          result))
      :no-cursor t)))
 
+(defun mongodb-collection--create-index (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-create-index-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (mongodb-query-input
+     "Enter the index keys document"
+     shell-process
+     (lambda (keys)
+       (let ((result (mongodb-shell-create-index shell-process db coll keys (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
+     :no-cursor t)))
+
 (defun mongodb-collection--drop (&optional args)
   (interactive (list (transient-args 'mongodb-collection-drop-transient)))
   (let ((shell-process mongodb-shell-process)
@@ -243,10 +270,10 @@
 
 (define-transient-command mongodb-collection-dispatch ()
   "Collection operations"
-  ["Collection operations"
-   ("c" "View another collection" mongodb-collection--use-collection)
-   ("f" "find" mongodb-collection-find-transient)
-   ("a" "aggregate" mongodb-collection-aggregate-transient)
+  ["General"
+   ("C" "View another collection" mongodb-collection--use-collection)
+   ("gr" "Refresh" mongodb-collection-refresh)]
+  ["Write operations"
    ("i" "insertOne" mongodb-collection-insert-one-transient)
    ("I" "insertMany" mongodb-collection-insert-many-transient)
    ("u" "updateOne" mongodb-collection-update-one-transient)
@@ -254,10 +281,11 @@
    ("r" "replaceOne" mongodb-collection-replace-one-transient)
    ("d" "deleteOne" mongodb-collection-delete-one-transient)
    ("D" "deleteMany" mongodb-collection-delete-many-transient)
-   ("X" "drop" mongodb-collection-drop-transient)
-   ("gr" "Refresh" mongodb-collection-refresh)
-   ;; ("D" "Drop this collection" mongodb-collection--drop)
-   ])
+   ("c" "createIndex" mongodb-collection-create-index-transient)
+   ("X" "drop" mongodb-collection-drop-transient)]
+  ["Read Operations"
+   ("f" "find" mongodb-collection-find-transient)
+   ("a" "aggregate" mongodb-collection-aggregate-transient)])
 
 (define-transient-command mongodb-collection-find-transient ()
   "Find command"
@@ -341,12 +369,62 @@
   ["Delete Many"
    ("d" "Prompt for a filter document and execute the delete" mongodb-collection--delete-many)])
 
+(define-transient-command mongodb-collection-create-index-transient ()
+  "createIndex command"
+  ["Command Options"
+   ("w" "Write concern" "writeConcern=")]
+  ["Index Options"
+   ("u" mongodb-create-index-unique)
+   ("n" "Name" "name=")
+   ("p" "Partial filter expression" "partialFilterExpression=")
+   ("s" mongodb-create-index-sparse)
+   ("e" "Expire after seconds" "expireAfterSeconds=")
+   ("h" mongodb-create-index-hidden)]
+  ["Text Index Options"
+   ("w" "Weights" "weights=")
+   ("d" "Default language" "default_language=")
+   ("l" "Language override" "language_override=")]
+  ["2d Index Options"
+   ("b" "Bits" "bits=")
+   ("m" "Min" "min=")
+   ("M" "Max" "max=")]
+  ["geoHaystack Index Options"
+   ("k" "Bucket size" "bucketSize=")]
+  ["Wildcard Index Options"
+   ("p" "Wildcard projection" "wildcardProjection=")]
+  ["Create Index"
+   ("c" "Enter the keys document and create the index" mongodb-collection--create-index)])
+
 (define-transient-command mongodb-collection-drop-transient ()
   "drop command"
   ["Options"
    ("w" "Write concern" "writeConcern=")]
   ["Drop Collection"
    ("X" "Drop this collection" mongodb-collection--drop)])
+
+(transient-define-argument mongodb-create-index-hidden ()
+  :description "hidden (default false)"
+  :class 'transient-switches
+  :key "h"
+  :argument-format "hidden=%s"
+  :argument-regexp "hidden=\\(true\\|false\\)"
+  :choices '("true" "false"))
+
+(transient-define-argument mongodb-create-index-unique ()
+  :description "unique (default false)"
+  :class 'transient-switches
+  :key "u"
+  :argument-format "unique=%s"
+  :argument-regexp "unique=\\(true\\|false\\)"
+  :choices '("true" "false"))
+
+(transient-define-argument mongodb-create-index-sparse ()
+  :description "sparse (default false)"
+  :class 'transient-switches
+  :key "s"
+  :argument-format "sparse=%s"
+  :argument-regexp "sparse=\\(true\\|false\\)"
+  :choices '("true" "false"))
 
 (transient-define-argument mongodb-update-upsert ()
   :description "upsert (default false)"
@@ -372,7 +450,7 @@
   (when (require 'evil nil t)
     (evil-define-key 'normal mongodb-collection-mode-map
       "?" 'mongodb-collection-dispatch
-      "c" 'mongodb-collection--use-collection
+      "C" 'mongodb-collection--use-collection
       "i" 'mongodb-collection-insert-one-transient
       "I" 'mongodb-collection-insert-many-transient
       "u" 'mongodb-collection-update-one-transient
@@ -382,12 +460,13 @@
       "D" 'mongodb-collection-delete-many-transient
       "f" 'mongodb-collection-find-transient
       "a" 'mongodb-collection-aggregate-transient
+      "c" 'mongodb-collection-create-index-transient
       "X" 'mongodb-collection-drop-transient
       "gr" 'mongodb-collection-refresh
       "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
       ))
-  (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
+  (define-key mongodb-collection-mode-map (kbd "C") 'mongodb-collection--use-collection)
   (define-key mongodb-collection-mode-map (kbd "i") 'mongodb-collection-insert-one-transient)
   (define-key mongodb-collection-mode-map (kbd "I") 'mongodb-collection-insert-many-transient)
   (define-key mongodb-collection-mode-map (kbd "u") 'mongodb-collection-update-one-transient)
@@ -395,6 +474,7 @@
   (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-replace-one-transient)
   (define-key mongodb-collection-mode-map (kbd "d") 'mongodb-collection-delete-one-transient)
   (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection-delete-many-transient)
+  (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection-create-index-transient)
   (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)
