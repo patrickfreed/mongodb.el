@@ -177,6 +177,10 @@
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.updateMany(%s, %s)" coll filter-update (or args "{}"))))
 
+(defun mongodb-shell-replace-one (shell db coll filter-replacement &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.replaceOne(%s, %s)" coll filter-replacement (or args "{}"))))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 

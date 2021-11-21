@@ -173,6 +173,25 @@
   (interactive (list (transient-args 'mongodb-collection-update-many-transient)))
   (mongodb-collection--update 'mongodb-shell-update-many args))
 
+(defun mongodb-collection--replace-one (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-replace-one-transient)))
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (mongodb-query-input
+     "filter and replacement documents"
+     shell-process
+     (lambda (filter-replacement)
+       (let ((result
+              (mongodb-shell-replace-one shell-process db coll filter-replacement (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
+     :no-cursor t
+     :num-inputs 2
+     :headings '("Filter document" "Replacement document"))))
+
 (defun mongodb-collection-quit ()
   (interactive)
   (if mongodb-collection-prev-buffer
@@ -191,7 +210,8 @@
    ("I" "insertMany" mongodb-collection-insert-many-transient)
    ("u" "updateOne" mongodb-collection-update-one-transient)
    ("U" "updateMany" mongodb-collection-update-many-transient)
-   ("r" "Refresh" mongodb-collection-refresh)
+   ("r" "replaceOne" mongodb-collection-replace-one-transient)
+   ("gr" "Refresh" mongodb-collection-refresh)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
 
@@ -248,12 +268,20 @@
    ("u" "Prompt for a filter document and an update document" mongodb-collection--update-one)])
 
 (define-transient-command mongodb-collection-update-many-transient ()
-  "updateOne command"
+  "updateMany command"
   ["Options"
    ("s" mongodb-update-upsert)
    ("w" "Write concern" "writeConcern=")]
-  ["Update One"
+  ["Update Many"
    ("u" "Prompt for a filter document and an update document" mongodb-collection--update-many)])
+
+(define-transient-command mongodb-collection-replace-one-transient ()
+  "replaceOne command"
+  ["Options"
+   ("s" mongodb-update-upsert)
+   ("w" "Write concern" "writeConcern=")]
+  ["Replace One"
+   ("r" "Prompt for a filter document and a replacement document" mongodb-collection--replace-one)])
 
 (transient-define-argument mongodb-update-upsert ()
   :description "upsert (default false)"
@@ -284,9 +312,10 @@
       "I" 'mongodb-collection-insert-many-transient
       "u" 'mongodb-collection-update-one-transient
       "U" 'mongodb-collection-update-many-transient
+      "r" 'mongodb-collection-replace-one-transient
       "f" 'mongodb-collection-find-transient
       "a" 'mongodb-collection-aggregate-transient
-      "r" 'mongodb-collection-refresh
+      "gr" 'mongodb-collection-refresh
       "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
       ))
@@ -295,12 +324,13 @@
   (define-key mongodb-collection-mode-map (kbd "I") 'mongodb-collection-insert-many-transient)
   (define-key mongodb-collection-mode-map (kbd "u") 'mongodb-collection-update-one-transient)
   (define-key mongodb-collection-mode-map (kbd "U") 'mongodb-collection-update-many-transient)
+  (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-replace-one-transient)
   (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
   (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
-  (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-refresh))
+  (define-key mongodb-collection-mode-map (kbd "gr") 'mongodb-collection-refresh))
 
 (define-derived-mode
   mongodb-collection-mode

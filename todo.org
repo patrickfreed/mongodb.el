@@ -19,7 +19,8 @@
    CLOSED: [2021-11-21 Sun 01:26]
 ** DONE updateMany command
    CLOSED: [2021-11-21 Sun 01:26]
-** TODO replaceOne command
+** DONE replaceOne command
+   CLOSED: [2021-11-21 Sun 16:58]
 ** TODO deleteOne
 ** TODO deleteMany
 ** TODO drop
@@ -64,6 +65,7 @@
 
 * misc
 ** TODO add background to header section
+** TODO use database from connection string
 
 * TODO clean up shell elisp API
 
@@ -74,4 +76,3 @@
 
 * RS config
 ** TODO open up rsconfig, make edits, submit
-
