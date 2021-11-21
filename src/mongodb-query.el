@@ -4,11 +4,13 @@
 
 (require 'mongodb-shell)
 
+(require 'cl-lib)
+
 (defvar-local mongodb-query-body nil)
 (defvar-local mongodb-query-cursor-id nil)
 (defvar-local mongodb-is-cursor-result nil)
 
-(defun mongodb-query-input (title shell body &optional no-cursor input-type)
+(cl-defun mongodb-query-input (title shell body &key no-cursor (input-type 'document) (num-inputs 1) headings)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
   (mongodb-query-mode)
@@ -18,13 +20,33 @@
   (insert "// " title "\n")
   (insert "// Press C-c C-c to submit." "\n")
   (cond
-   ((eq input-type 'array) (insert "[]"))
-   (t (insert "{}"))))
+   ((eq input-type 'array) (mongodb-query-insert-prompt "[" "]" num-inputs headings))
+   (t (mongodb-query-insert-prompt "{" "}" num-inputs headings))))
+
+(defun mongodb-query-insert-prompt (open close num headings)
+  (let ((end-point))
+    (dotimes (c num)
+      (when headings
+        (newline)
+        (insert "// " (nth c headings))
+        (newline))
+      (insert open)
+      (newline)
+      (indent-for-tab-command)
+      (when (= c 0) (setq end-point (point)))
+      (newline)
+      (insert close)
+      (when (< c (- num 1))
+        (insert ",")
+        (newline))
+      (newline))
+    (goto-char end-point)))
 
 (defun mongodb-query-execute ()
   (interactive)
   (goto-char (point-min))
   (flush-lines "^//")
+  (flush-lines "^$")
   (let ((query-result (funcall mongodb-query-body (buffer-string)))
         (shell-process mongodb-shell-process)
         (is-cursor-result mongodb-is-cursor-result))

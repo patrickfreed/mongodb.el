@@ -9,7 +9,7 @@
   server-version
   topology-type)
 
-(defconst mongodb-shell-prompt-regex "^\\([^\n]*:\\)?\\(PRIMARY\\|SECONDARY\\|ARBITER\\|mongos\\)?> $")
+(defconst mongodb-shell-prompt-regex "^[\\. ]*\\([^\n]*:\\)?\\(PRIMARY\\|SECONDARY\\|ARBITER\\|mongos\\)?> $")
 
 (defun mongodb-shell-start (uri)
   (with-current-buffer (get-buffer-create "*mongodb-shell-process*")
@@ -60,7 +60,7 @@
             (goto-char (point-min))
             (re-search-forward mongodb-shell-prompt-regex)
             (let ((output-end (match-beginning 0)))
-              (string-trim (buffer-substring output-start output-end)))))))))
+              (string-trim (buffer-substring output-start output-end) "[ \t\n\r\\.]+"))))))))
 
 (defun mongodb--parse-databases ()
   (if (re-search-forward "^\\([^ ]+\\)[ ]+\\([0-9.]+\\)GB$" nil t)
@@ -168,6 +168,14 @@
 (defun mongodb-shell-insert-many (shell db coll documents &optional args)
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.insertMany(%s, %s)" coll documents (or args "{}"))))
+
+(defun mongodb-shell-update-one (shell db coll filter-update &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.updateOne(%s, %s)" coll filter-update (or args "{}"))))
+
+(defun mongodb-shell-update-many (shell db coll filter-update &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.%s.updateMany(%s, %s)" coll filter-update (or args "{}"))))
 
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))

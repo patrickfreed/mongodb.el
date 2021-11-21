@@ -15,7 +15,13 @@
 ** DONE aggregate
 ** DONE switch to another collection
 ** DONE quit window
-** TODO update command
+** DONE updateOne command
+   CLOSED: [2021-11-21 Sun 01:26]
+** DONE updateMany command
+   CLOSED: [2021-11-21 Sun 01:26]
+** TODO replaceOne command
+** TODO deleteOne
+** TODO deleteMany
 ** TODO drop
 ** TODO create index
    
@@ -38,20 +44,22 @@
 ** TODO switch to another database
 ** TODO generic runCommand
 
-* Query results
-** DONE basic display
-** TODO repeat prior query (with input)
-
-* Auth
-** TODO display authenticated user in connection window
-** TODO use secure method of inputing username/password
-
 * Query input
+** TODO space out {} and [] for prettier input
 ** TODO autocomplete find query operators
 ** TODO autocomplete aggregation stages
 ** TODO command-specific modes for query input
    e.g. for a find query input, bind C-c g to insert "{ "$gt": <point> }" or something
 ** TODO better syntax highlighting in query input
+
+* Query results
+** DONE basic display
+** TODO repeat prior query (with input)
+** TODO display message indicating no results were found
+
+* Auth
+** TODO display authenticated user in connection window
+** TODO use secure method of inputing username/password
 
 * misc
 ** TODO add background to header section

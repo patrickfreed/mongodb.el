@@ -98,8 +98,7 @@
        shell-process
        (lambda (pipeline)
          (mongodb-shell-aggregate-pretty shell-process db coll pipeline pairs))
-       nil
-       'array))))
+       :input-type 'array))))
 
 (defun mongodb-args-to-document (args)
   (concat
@@ -127,7 +126,7 @@
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
-     t)))
+     :no-cursor t)))
 
 (defun mongodb-collection--insert-many (&optional args)
   (interactive (list (transient-args 'mongodb-collection-insert-many-transient)))
@@ -144,8 +143,35 @@
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
-     t
-     'array)))
+     :no-cursor t
+     :input-type 'array)))
+
+(defun mongodb-collection--update (update-fun &optional args)
+  (let ((shell-process mongodb-shell-process)
+        (db mongodb-database-current)
+        (coll mongodb-collection-current)
+        (buf (current-buffer)))
+    (message "updating collection %s" mongodb-collection-current)
+    (mongodb-query-input
+     "filter and update documents"
+     shell-process
+     (lambda (filter-update)
+       (let ((result (funcall update-fun shell-process db coll filter-update (mongodb-args-to-document args))))
+         (with-current-buffer buf
+           (mongodb-collection-refresh t))
+         result))
+     :no-cursor t
+     :num-inputs 2
+     :headings '("Filter document" "Update document"))))
+
+
+(defun mongodb-collection--update-one (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-update-one-transient)))
+  (mongodb-collection--update 'mongodb-shell-update-one args))
+
+(defun mongodb-collection--update-many (&optional args)
+  (interactive (list (transient-args 'mongodb-collection-update-many-transient)))
+  (mongodb-collection--update 'mongodb-shell-update-many args))
 
 (defun mongodb-collection-quit ()
   (interactive)
@@ -163,6 +189,8 @@
    ("a" "aggregate" mongodb-collection-aggregate-transient)
    ("i" "insertOne" mongodb-collection-insert-one-transient)
    ("I" "insertMany" mongodb-collection-insert-many-transient)
+   ("u" "updateOne" mongodb-collection-update-one-transient)
+   ("U" "updateMany" mongodb-collection-update-many-transient)
    ("r" "Refresh" mongodb-collection-refresh)
    ;; ("D" "Drop this collection" mongodb-collection--drop)
    ])
@@ -209,7 +237,31 @@
    ("w" "Write concern" "writeConcern=")
    ("o" mongodb-insert-many-ordered)]
   ["Insert Many"
-   ("i" "Prompt for an array of documents and insert them" mongodb-collection--insert-many)])
+   ("I" "Prompt for an array of documents and insert them" mongodb-collection--insert-many)])
+
+(define-transient-command mongodb-collection-update-one-transient ()
+  "updateOne command"
+  ["Options"
+   ("s" mongodb-update-upsert)
+   ("w" "Write concern" "writeConcern=")]
+  ["Update One"
+   ("u" "Prompt for a filter document and an update document" mongodb-collection--update-one)])
+
+(define-transient-command mongodb-collection-update-many-transient ()
+  "updateOne command"
+  ["Options"
+   ("s" mongodb-update-upsert)
+   ("w" "Write concern" "writeConcern=")]
+  ["Update One"
+   ("u" "Prompt for a filter document and an update document" mongodb-collection--update-many)])
+
+(transient-define-argument mongodb-update-upsert ()
+  :description "upsert (default false)"
+  :class 'transient-switches
+  :key "s"
+  :argument-format "upsert=%s"
+  :argument-regexp "upsert=\\(true\\|false\\)"
+  :choices '("true" "false"))
 
 (transient-define-argument mongodb-insert-many-ordered ()
   :description "Whether to insert the documents in order or not (default true)"
@@ -230,7 +282,10 @@
       "c" 'mongodb-collection--use-collection
       "i" 'mongodb-collection-insert-one-transient
       "I" 'mongodb-collection-insert-many-transient
+      "u" 'mongodb-collection-update-one-transient
+      "U" 'mongodb-collection-update-many-transient
       "f" 'mongodb-collection-find-transient
+      "a" 'mongodb-collection-aggregate-transient
       "r" 'mongodb-collection-refresh
       "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
@@ -238,8 +293,11 @@
   (define-key mongodb-collection-mode-map (kbd "c") 'mongodb-collection--use-collection)
   (define-key mongodb-collection-mode-map (kbd "i") 'mongodb-collection-insert-one-transient)
   (define-key mongodb-collection-mode-map (kbd "I") 'mongodb-collection-insert-many-transient)
+  (define-key mongodb-collection-mode-map (kbd "u") 'mongodb-collection-update-one-transient)
+  (define-key mongodb-collection-mode-map (kbd "U") 'mongodb-collection-update-many-transient)
   (define-key mongodb-collection-mode-map (kbd "q") 'mongodb-collection-quit)
   (define-key mongodb-collection-mode-map (kbd "f") 'mongodb-collection-find-transient)
+  (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)
   ;; (define-key mongodb-collection-mode-map (kbd "D") 'mongodb-collection--drop)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
   (define-key mongodb-collection-mode-map (kbd "r") 'mongodb-collection-refresh))
