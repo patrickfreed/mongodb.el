@@ -403,7 +403,7 @@
    ("X" "Drop this collection" mongodb-collection--drop)])
 
 (transient-define-argument mongodb-create-index-hidden ()
-  :description "hidden (default false)"
+  :description "Hidden (default false)"
   :class 'transient-switches
   :key "h"
   :argument-format "hidden=%s"
@@ -411,7 +411,7 @@
   :choices '("true" "false"))
 
 (transient-define-argument mongodb-create-index-unique ()
-  :description "unique (default false)"
+  :description "Unique (default false)"
   :class 'transient-switches
   :key "u"
   :argument-format "unique=%s"
@@ -419,7 +419,7 @@
   :choices '("true" "false"))
 
 (transient-define-argument mongodb-create-index-sparse ()
-  :description "sparse (default false)"
+  :description "Sparse (default false)"
   :class 'transient-switches
   :key "s"
   :argument-format "sparse=%s"
@@ -427,7 +427,7 @@
   :choices '("true" "false"))
 
 (transient-define-argument mongodb-update-upsert ()
-  :description "upsert (default false)"
+  :description "Upsert (default false)"
   :class 'transient-switches
   :key "s"
   :argument-format "upsert=%s"
@@ -435,7 +435,7 @@
   :choices '("true" "false"))
 
 (transient-define-argument mongodb-insert-many-ordered ()
-  :description "Whether to insert the documents in order or not (default true)"
+  :description "Ordered (default true)"
   :class 'transient-switches
   :key "o"
   :argument-format "ordered=%s"
