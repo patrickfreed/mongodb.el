@@ -26,19 +26,21 @@
     (magit-insert-section (mongodb-collection-buffer-section)
       (magit-insert-section (mongodb-collection-info-section)
         (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
-        (mongodb--insert-header-line "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
+        (mongodb--insert-header-line
+         "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
         (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
         (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
         (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
         (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongodb-shell-process)))
       (newline)
       (magit-insert-section (mongodb-collection-documents)
-        (magit-insert-heading
-          (propertize "Documents" 'face 'magit-section-heading)
-          (propertize (format " (%d)" (mongodb-shell-collection-count mongodb-shell-process db-name coll-name))))
         (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
                (first-batch (car result))
-               (cursor-id (cdr result)))
+               (cursor-id (cdr result))
+               (count (mongodb-shell-collection-count mongodb-shell-process db-name coll-name)))
+          (magit-insert-heading
+            (propertize "Documents" 'face 'magit-section-heading)
+            (propertize (format " (%d)" count)))
           (seq-do
            (lambda (doc)
              (magit-insert-section (mongodb-collection-document doc t)
@@ -51,8 +53,8 @@
                  (insert (mongodb-document-string doc) "\n"))))
            first-batch)
           (when cursor-id
-            (insert-text-button "Type + to show more results"))))
-      (newline)
+            (insert (propertize (format "...omitting %s document(s) from preview..." (- count 20)) 'face 'shadow)))))
+      (newline 2)
       (let ((indexes (mongodb-shell-list-indexes mongodb-shell-process db-name coll-name)))
         (magit-insert-section (mongodb-collection-indexes)
           (magit-insert-heading

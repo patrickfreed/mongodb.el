@@ -5,6 +5,7 @@
    CLOSED: [2021-11-20 Sat 01:02]
 ** DONE view a collection (command)
    CLOSED: [2021-11-20 Sat 01:34]
+** TODO create a new collection
 ** TODO display set name for replica sets
 ** TODO display number of shards/addresses for sharded clusters
 
@@ -32,28 +33,36 @@
 ** DONE rationalize arguments
    CLOSED: [2021-11-21 Sun 18:56]
    
-* TODO Collection preview
-** TODO view more via '+'
-** TODO toggle collapsed, expanded
-** TODO delete index via "x" on hover
-** TODO delete document via "x" on hover
+* DONE Collection preview
+** CANCELLED view more via '+'
+   CLOSED: [2021-11-21 Sun 19:17]
+   - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
+     not needed with collection explorer
+** CANCELLED toggle collapsed, expanded
+   CLOSED: [2021-11-21 Sun 19:17]
+   - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
+     not needed with collection explorer
+** CANCELLED delete document via "x" on hover
+   CLOSED: [2021-11-21 Sun 19:19]
+   - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:19] \\
+     not needed with collection explorer
 ** DONE show indexes
    CLOSED: [2021-11-21 Sun 18:52]
    
-* TODO Collection explorer
-** TODO buffer to explore collections contents
-   This should be paginated, pretty
-** TODO edit individual document applies update server side
-** TODO delete individual document server side
-** TODO batch delete documents dired style
-
 * TODO Database operations
 ** TODO rename collection
    This should behave like dired for renaming files
 ** TODO drop collection(s)
    This should behave like dired for deleting files
 ** TODO switch to another database
-** TODO generic runCommand
+** DONE generic runCommand using query input
+
+* TODO Collection explorer
+** TODO buffer to explore collections contents
+   This should be paginated, pretty
+** TODO edit individual document applies update server side
+** TODO delete individual document server side
+** TODO batch delete documents dired style
 
 * TODO Query input
 ** TODO space out {} and [] for prettier input
@@ -73,8 +82,10 @@
 ** TODO use secure method of inputing username/password
 
 * TODO misc
+** TODO support multiple shell instances 
 ** TODO add background to header section
 ** TODO use database from connection string
+** TODO delete index via "x" on hover in collection preview
 
 * TODO clean up shell elisp API
 

@@ -48,19 +48,23 @@
   (interactive)
   (if (y-or-n-p (format "Are you sure you want to drop the %S database?" mongodb-database-current))
       (progn
-        (mongodb-shell-command mongodb-shell-process (format "db.getSiblingDB(%S).dropDatabase()" mongodb-database-current))
+        (mongodb-shell-command
+         mongodb-shell-process
+         (format "db.getSiblingDB(%S).dropDatabase()" mongodb-database-current))
         (message "Database %S dropped." mongodb-database-current)
-        (mongodb-view-database mongodb-shell-process mongodb-database-current))
+        (mongodb-database-quit))
     (message "Drop cancelled.")))
 
-(defun mongodb-database--run-command (command)
-  (interactive "sRun command: ")
+(defun mongodb-database--run-command ()
+  (interactive)
   (mongodb-shell-command mongodb-shell-process (format "use %s" mongodb-database-current))
-  (let ((output (mongodb-shell-command mongodb-shell-process (format "db.runCommand(%s)" command))))
-    (switch-to-buffer-other-window (get-buffer-create "*mongodb-shell-output*"))
-    (javascript-mode)
-    (erase-buffer)
-    (insert output)))
+
+  (mongodb-query-input
+   "database command"
+   mongodb-shell-process
+   (lambda (command)
+     (mongodb-shell-command mongodb-shell-process (format "db.runCommand(%s)" command)))
+   :no-cursor t))
 
 (defun mongodb-database--view-collection-at-point ()
   (interactive)
