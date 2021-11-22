@@ -54,7 +54,8 @@
                      (magit-insert-heading
                        (propertize "Large documents hidden by default, press <TAB> to expand." 'face 'shadow))
                      (magit-insert-section (mongodb-collection-document-more doc t)
-                       (insert (mongodb-document-string doc) "\n")))
+                       (insert (mongodb-document-string
+                                (mongodb-shell-pretty-print mongodb-shell-process doc)) "\n")))
                  (insert (mongodb-document-string doc) "\n"))))
            first-batch)
           (when cursor-id

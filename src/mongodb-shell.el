@@ -214,6 +214,9 @@
 (defun mongodb-shell-generate-uuid (shell)
   (mongodb-shell-command shell "UUID().hex()"))
 
+(defun mongodb-shell-pretty-print (shell obj)
+  (mongodb-shell-command shell (format "printjson(%s)" obj)))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 

@@ -32,7 +32,8 @@
 ** DONE rationalize arguments
    CLOSED: [2021-11-21 Sun 18:56]
    
-* TODO Collection preview
+* DONE Collection preview
+  CLOSED: [2021-11-22 Mon 00:17]
 ** CANCELLED view more via '+'
    CLOSED: [2021-11-21 Sun 19:17]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
@@ -49,7 +50,8 @@
    CLOSED: [2021-11-21 Sun 18:52]
 ** DONE show collection options
    CLOSED: [2021-11-21 Sun 22:01]
-** TODO pretty print large documents after expansion
+** DONE pretty print large documents after expansion
+   CLOSED: [2021-11-22 Mon 00:17]
    
 * DONE Database operations
   CLOSED: [2021-11-21 Sun 20:50]
