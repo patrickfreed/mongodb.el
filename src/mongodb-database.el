@@ -71,6 +71,31 @@
   (when-let ((coll (magit-section-value-if 'mongodb-collection-section)))
     (mongodb-view-collection mongodb-shell-process mongodb-database-current coll)))
 
+(defun mongodb-database--drop-collection-at-point ()
+  (interactive)
+  (when-let ((coll (magit-section-value-if 'mongodb-collection-section)))
+    (when (y-or-n-p (format "Are you sure you want to drop the %S collection?" coll))
+      (mongodb-shell-drop-collection mongodb-shell-process mongodb-database-current coll)
+      (mongodb-database-refresh t))))
+
+(defun mongodb-database--create-collection (&optional args)
+  (interactive (list (transient-args 'mongodb-database-create-collection-transient)))
+  (let ((name (read-string "Collection name: ")))
+    (mongodb-shell-create-collection
+     mongodb-shell-process
+     mongodb-database-current
+     name
+     (mongodb-args-to-document args))
+    (mongodb-view-collection mongodb-shell-process mongodb-database-current name)))
+
+(defun mongodb-database-refresh (&optional silent)
+  (interactive)
+  (when (not silent)
+    (message "refreshing..."))
+  (mongodb-view-database mongodb-shell-process mongodb-database-current)
+  (when (not silent)
+    (message "refreshing...done")))
+
 (defun mongodb-database-quit ()
   (interactive)
   (if mongodb-database-connect-buffer
@@ -82,9 +107,62 @@
 (define-transient-command mongodb-database-dispatch ()
   "Database operations"
   ["Database operations"
+   ("c" "View a collection" mongodb-collection--use-collection)
+   ("C" "Create a collection" mongodb-database-create-collection-transient)
    ("r" "Run a database command" mongodb-database--run-command)
    ("d" "View another database" mongodb-database--use-database)
-   ("D" "Drop this database" mongodb-database--drop)])
+   ("X" "Drop this database" mongodb-database--drop)
+   ("gr" "refresh" mongodb-database-refresh)])
+
+(define-transient-command mongodb-database-create-collection-transient ()
+  "createCollection command"
+  ["Command Options"
+   ("w" "Write concern" "writeConcern=")]
+  ["Collection Options"
+   ("c" mongodb-database-create-collection-capped)
+   ("e" "Expire after seconds" "expireAfterSeconds=")
+   ("s" "Size" "size=")
+   ("M" "Max" "max=")
+   ("V" "View on" "viewOn=")
+   ("p" "Aggregation pipeline used to create the view" "pipeline=")]
+  ["Validation options"
+   ("vd" "Validator document" "validator=")
+   ("va" mongodb-database-create-collection-validation-action)
+   ("vl" mongodb-database-create-collection-validation-level)]
+  ["Create Collection"
+   ("C" "Create a collection with the provided options" mongodb-database--create-collection)])
+
+(transient-define-argument mongodb-database-create-collection-timeseries-granularity ()
+  :description "Granularity (default \"seconds\")"
+  :class 'transient-switches
+  :key "g"
+  :argument-format "timeseries.granularity=%s"
+  :argument-regexp "timeseries.granularity=\\(\"seconds\"\\|\"minutes\"\\|\"hours\"\\)"
+  :choices '("seconds" "minutes" "hours"))
+
+(transient-define-argument mongodb-database-create-collection-validation-action ()
+  :description "Validation action (default \"error\")"
+  :class 'transient-switches
+  :key "va"
+  :argument-format "validationAction=%s"
+  :argument-regexp "validationAction=\\(\"error\"\\|\"warn\"\\)"
+  :choices '("\"error\"" "\"warn\""))
+
+(transient-define-argument mongodb-database-create-collection-validation-level ()
+  :description "Validation level (default \"strict\")"
+  :class 'transient-switches
+  :key "vl"
+  :argument-format "validationLevel=%s"
+  :argument-regexp "validationLevel=\\(\"off\"\\|\"strict\"\\|\"moderate\")"
+  :choices '("\"off\"" "\"moderate\"" "\"strict\""))
+
+(transient-define-argument mongodb-database-create-collection-capped ()
+  :description "Capped (default false)"
+  :class 'transient-switches
+  :key "c"
+  :argument-format "capped=%s"
+  :argument-regexp "capped=\\(true\\|false\\)"
+  :choices '("true" "false"))
 
 (defvar mongodb-database-mode-map nil "Keymap for MongoDB database buffers")
 
@@ -95,14 +173,22 @@
     (evil-define-key 'normal mongodb-database-mode-map
       "?" 'mongodb-database-dispatch
       "r" 'mongodb-database--run-command
+      "c" 'mongodb-collection--use-collection
+      "C" 'mongodb-database-create-collection-transient
       "d" 'mongodb-database--use-database
-      "D" 'mongodb-database--drop
+      "x" 'mongodb-database--drop-collection-at-point
+      "X" 'mongodb-database--drop
       "q" 'mongodb-database-quit
+      "gr" 'mongodb-database-refresh
       (kbd "<RET>") 'mongodb-database--view-collection-at-point))
   (define-key mongodb-database-mode-map (kbd "r") 'mongodb-database--run-command)
+  (define-key mongodb-database-mode-map (kbd "c") 'mongodb-collection--use-collection)
+  (define-key mongodb-database-mode-map (kbd "C") 'mongodb-database-create-collection-transient)
   (define-key mongodb-database-mode-map (kbd "d") 'mongodb-database--use-database)
-  (define-key mongodb-database-mode-map (kbd "D") 'mongodb-database--drop)
+  (define-key mongodb-database-mode-map (kbd "x") 'mongodb-database--drop-collection-at-point)
+  (define-key mongodb-database-mode-map (kbd "X") 'mongodb-database--drop)
   (define-key mongodb-database-mode-map (kbd "q") 'mongodb-database-quit)
+  (define-key mongodb-database-mode-map (kbd "gr") 'mongodb-database-refresh)
   (define-key mongodb-database-mode-map (kbd "<RET>") 'mongodb-database--view-collection-at-point)
   (define-key mongodb-database-mode-map (kbd "?") 'mongodb-database-dispatch)
   ;; (define-key evg-view-patch-mode-map (kbd "r") 'evg-view-patch-refresh)

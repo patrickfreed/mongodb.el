@@ -207,6 +207,10 @@
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.%s.createIndex(%s, %s)" coll keys (or args "{}"))))
 
+(defun mongodb-shell-create-collection (shell db coll-name &optional args)
+  (mongodb-shell-command shell (concat "use " db))
+  (mongodb-shell-command shell (format "db.createCollection(%S, %s)" coll-name (or args "{}"))))
+
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
 
