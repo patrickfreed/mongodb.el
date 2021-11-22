@@ -289,6 +289,12 @@
     (mongodb-shell-drop-collection shell-process db coll (mongodb-args-to-document args))
     (mongodb-collection-quit)))
 
+(defun mongodb-collection--back ()
+  (interactive)
+  (let ((old-buf (current-buffer)))
+    (mongodb-database--use-database mongodb-database-current)
+    (kill-buffer old-buf)))
+
 (defun mongodb-collection-quit ()
   (interactive)
   (if mongodb-collection-prev-buffer
@@ -301,6 +307,7 @@
   "Collection operations"
   ["General"
    ("C" "View another collection" mongodb-collection--use-collection)
+   ("<" "Go back to database" 'mongodb-collection--back)
    ("gr" "Refresh" mongodb-collection-refresh)]
   ["Write operations"
    ("i" "insertOne" mongodb-collection-insert-one-transient)
@@ -492,6 +499,7 @@
       "c" 'mongodb-collection-create-index-transient
       "X" 'mongodb-collection-drop-transient
       "gr" 'mongodb-collection-refresh
+      "<" 'mongodb-collection--back
       "q" 'mongodb-collection-quit
       ;; "D" 'mongodb-collection--drop
       ))
@@ -509,6 +517,7 @@
   (define-key mongodb-collection-mode-map (kbd "a") 'mongodb-collection-aggregate-transient)
   (define-key mongodb-collection-mode-map (kbd "X") 'mongodb-collection-drop-transient)
   (define-key mongodb-collection-mode-map (kbd "?") 'mongodb-collection-dispatch)
+  (define-key mongodb-collection-mode-map (kbd "<") 'mongodb-collection-back)
   (define-key mongodb-collection-mode-map (kbd "gr") 'mongodb-collection-refresh))
 
 (define-derived-mode

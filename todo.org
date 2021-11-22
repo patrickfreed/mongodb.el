@@ -32,8 +32,7 @@
 ** DONE rationalize arguments
    CLOSED: [2021-11-21 Sun 18:56]
    
-* DONE Collection preview
-  CLOSED: [2021-11-21 Sun 22:01]
+* TODO Collection preview
 ** CANCELLED view more via '+'
    CLOSED: [2021-11-21 Sun 19:17]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
@@ -50,6 +49,7 @@
    CLOSED: [2021-11-21 Sun 18:52]
 ** DONE show collection options
    CLOSED: [2021-11-21 Sun 22:01]
+** TODO pretty print large documents after expansion
    
 * DONE Database operations
   CLOSED: [2021-11-21 Sun 20:50]
@@ -94,6 +94,8 @@
 ** TODO delete index via "x" on hover in collection preview
 ** TODO rename collection
    This should behave like dired for renaming files
+** DONE backwards navigation
+   CLOSED: [2021-11-22 Mon 00:10]
 
 * TODO clean up shell elisp API
 

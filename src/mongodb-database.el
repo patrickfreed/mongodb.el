@@ -96,6 +96,12 @@
   (when (not silent)
     (message "refreshing...done")))
 
+(defun mongodb-database--back ()
+  (interactive)
+  (let ((old-buf (current-buffer)))
+    (mongodb-connect (mongodb-shell-uri mongodb-shell-process))
+    (kill-buffer old-buf)))
+
 (defun mongodb-database-quit ()
   (interactive)
   (if mongodb-database-connect-buffer
@@ -112,6 +118,7 @@
    ("r" "Run a database command" mongodb-database--run-command)
    ("d" "View another database" mongodb-database--use-database)
    ("X" "Drop this database" mongodb-database--drop)
+   ("<" "Go back to deployment overview" mongodb-database--back)
    ("gr" "refresh" mongodb-database-refresh)])
 
 (define-transient-command mongodb-database-create-collection-transient ()
@@ -179,6 +186,7 @@
       "x" 'mongodb-database--drop-collection-at-point
       "X" 'mongodb-database--drop
       "q" 'mongodb-database-quit
+      "<" 'mongodb-database--back
       "gr" 'mongodb-database-refresh
       (kbd "<RET>") 'mongodb-database--view-collection-at-point))
   (define-key mongodb-database-mode-map (kbd "r") 'mongodb-database--run-command)
@@ -188,6 +196,7 @@
   (define-key mongodb-database-mode-map (kbd "x") 'mongodb-database--drop-collection-at-point)
   (define-key mongodb-database-mode-map (kbd "X") 'mongodb-database--drop)
   (define-key mongodb-database-mode-map (kbd "q") 'mongodb-database-quit)
+  (define-key mongodb-database-mode-map (kbd "<") 'mongodb-database--back)
   (define-key mongodb-database-mode-map (kbd "gr") 'mongodb-database-refresh)
   (define-key mongodb-database-mode-map (kbd "<RET>") 'mongodb-database--view-collection-at-point)
   (define-key mongodb-database-mode-map (kbd "?") 'mongodb-database-dispatch)
