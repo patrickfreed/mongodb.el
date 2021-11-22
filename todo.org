@@ -69,7 +69,11 @@
    This should be paginated, pretty
 ** TODO edit individual document applies update server side
 ** TODO delete individual document server side
-** TODO batch delete documents dired style
+** CANCELLED batch delete documents dired style
+   CLOSED: [2021-11-22 Mon 00:25]
+
+   - State "CANCELLED"  from "TODO"       [2021-11-22 Mon 00:25] \\
+     doesn't seem that useful in comparison to how hard it would be to implement
 
 * TODO Query input
 ** DONE space out {} and [] for prettier input
