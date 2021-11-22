@@ -32,7 +32,8 @@
 ** DONE rationalize arguments
    CLOSED: [2021-11-21 Sun 18:56]
    
-* TODO Collection preview
+* DONE Collection preview
+  CLOSED: [2021-11-21 Sun 22:01]
 ** CANCELLED view more via '+'
    CLOSED: [2021-11-21 Sun 19:17]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
@@ -47,16 +48,16 @@
      not needed with collection explorer
 ** DONE show indexes
    CLOSED: [2021-11-21 Sun 18:52]
-** TODO show collection options
+** DONE show collection options
+   CLOSED: [2021-11-21 Sun 22:01]
    
-* TODO Database operations
+* DONE Database operations
+  CLOSED: [2021-11-21 Sun 20:50]
 ** DONE drop collection(s)
    CLOSED: [2021-11-21 Sun 20:45]
    This should behave like dired for deleting files
 ** DONE create a new collection
    CLOSED: [2021-11-21 Sun 20:45]
-** TODO rename collection
-   This should behave like dired for renaming files
 ** DONE switch to another database
    CLOSED: [2021-11-21 Sun 20:46]
 ** DONE generic runCommand using query input
@@ -91,6 +92,8 @@
 ** TODO add background to header section
 ** TODO use database from connection string
 ** TODO delete index via "x" on hover in collection preview
+** TODO rename collection
+   This should behave like dired for renaming files
 
 * TODO clean up shell elisp API
 

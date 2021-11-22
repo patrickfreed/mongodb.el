@@ -10,6 +10,7 @@
 (defvar-local mongodb-collection-current nil)
 (defvar-local mongodb-database-current nil)
 (defvar-local mongodb-collection-prev-buffer nil)
+(defvar-local mongodb-collection-info nil)
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name)
   (let ((prev-buffer (current-buffer)))
@@ -23,16 +24,20 @@
     (setq-local mongodb-shell-process mongo-shell)
     (setq-local mongodb-database-current db-name)
     (setq-local mongodb-collection-current coll-name)
+    (setq-local mongodb-collection-info (mongodb-collection--get-info))
     (magit-insert-section (mongodb-collection-buffer-section)
       (magit-insert-section (mongodb-collection-info-section)
         (mongodb--insert-header-line "Database Name" (propertize mongodb-database-current 'face 'magit-branch-local))
-        (mongodb--insert-header-line
-         "Collection Name" (propertize mongodb-collection-current 'face 'magit-branch-remote))
+        (mongodb--insert-header-line "Collection Name"
+                                     (propertize mongodb-collection-current 'face 'magit-branch-remote))
+        (mongodb--insert-header-line "Type" (alist-get 'type mongodb-collection-info))
         (mongodb--insert-header-line "Connection String" (mongodb-shell-uri mongodb-shell-process))
         (mongodb--insert-header-line "MongoDB Server Version" (mongodb-shell-server-version mongodb-shell-process))
         (mongodb--insert-header-line "MongoDB Shell Version" (mongodb-shell-shell-version mongodb-shell-process))
         (mongodb--insert-header-line "Topology" (mongodb-shell-topology-type mongodb-shell-process)))
       (newline)
+
+      ;; insert coument preview
       (magit-insert-section (mongodb-collection-documents)
         (let* ((result (mongodb-shell-find mongodb-shell-process db-name coll-name "{}"))
                (first-batch (car result))
@@ -54,18 +59,40 @@
            first-batch)
           (when cursor-id
             (insert (propertize (format "...omitting %s document(s) from preview..." (- count 20)) 'face 'shadow)))))
+
+      ;; insert index information
+      (when (not (string= (alist-get 'type mongodb-collection-info) "view"))
+        (newline 2)
+        (let ((indexes (mongodb-shell-list-indexes mongodb-shell-process db-name coll-name)))
+          (magit-insert-section (mongodb-collection-indexes)
+            (magit-insert-heading
+              (propertize "Indexes" 'face 'magit-section-heading)
+              (propertize (format " (%d)" (length indexes))))
+            (seq-do
+             (lambda (index)
+               (magit-insert-section (mongodb-collection-index index t)
+                 (insert (mongodb-document-string index) "\n")))
+             indexes))))
+
+      ;; insert options information
       (newline 2)
-      (let ((indexes (mongodb-shell-list-indexes mongodb-shell-process db-name coll-name)))
-        (magit-insert-section (mongodb-collection-indexes)
-          (magit-insert-heading
-            (propertize "Indexes" 'face 'magit-section-heading)
-            (propertize (format " (%d)" (length indexes))))
-          (seq-do
-           (lambda (index)
-             (magit-insert-section (mongodb-collection-index index t)
-               (insert (mongodb-document-string index) "\n")))
-           indexes))))
+      (magit-insert-section (mongodb-collection-options)
+        (magit-insert-heading
+          (propertize "Options" 'face 'magit-section-heading)
+          (propertize (format " (%d)" (hash-table-count (alist-get 'options mongodb-collection-info)))))
+        (maphash
+         (lambda (k v) (mongodb--insert-property k (mongodb-document-string (json-encode v)) 1))
+         (alist-get 'options mongodb-collection-info))))
     (read-only-mode)))
+
+(defun mongodb-collection--get-info ()
+  (mongodb-shell-command mongodb-shell-process (concat "use " mongodb-database-current))
+  (let* ((info-json (mongodb-shell-command
+                     mongodb-shell-process
+                     (format "JSON.stringify(db.getCollectionInfos({ \"name\": %S })[0]);" mongodb-collection-current)))
+         (info-map (json-parse-string info-json)))
+    (list (cons 'type (gethash "type" info-map))
+          (cons 'options (gethash "options" info-map)))))
 
 (defun mongodb-collection-refresh (&optional silent)
   (interactive)

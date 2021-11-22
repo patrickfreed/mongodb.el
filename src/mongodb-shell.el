@@ -92,14 +92,14 @@
 
 (defun mongodb-shell-collection-count (shell db coll)
   (mongodb-shell-command shell (concat "use " db))
-  (string-to-number (mongodb-shell-command shell (format "db.%s.countDocuments({})" coll))))
+  (string-to-number (mongodb-shell-command shell (format "db[%S].countDocuments({})" coll))))
 
 (defun mongodb-shell-find (shell db coll filter)
   (mongodb-shell-command shell (concat "use " db))
   (let ((uuid (mongodb-shell-command shell "UUID().hex()"))
         (has-more))
     (with-temp-buffer
-      (insert (mongodb-shell-command shell (format "cursors[%S] = db.%s.find(%s)" uuid coll filter)))
+      (insert (mongodb-shell-command shell (format "cursors[%S] = db[%S].find(%s)" uuid coll filter)))
       (goto-char (point-min))
       (when (re-search-forward "^Type \"it\" for more" nil t)
         (setq has-more t)
@@ -116,7 +116,7 @@
   (mongodb-shell-command shell (concat "use " db))
   (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
          (projection (or (cadr (assoc "projection" args)) "{}"))
-         (command (format "const cursor%s = db.%s.find(%s, %s).pretty()" uuid coll filter projection)))
+         (command (format "const cursor%s = db[%S].find(%s, %s).pretty()" uuid coll filter projection)))
     ;; TODO: write a function for this
     (when-let ((limit (cadr (assoc "limit" args))))
       (setq command (concat command (format ".limit(%s)" limit))))
@@ -140,7 +140,7 @@
 (defun mongodb-shell-aggregate-pretty (shell db coll pipeline &optional args)
   (mongodb-shell-command shell (concat "use " db))
   (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
-         (command (format "const cursor%s = db.%s.aggregate(%s).pretty()" uuid coll pipeline)))
+         (command (format "const cursor%s = db[%S].aggregate(%s).pretty()" uuid coll pipeline)))
     ;; TODO: write a function for this
     (when-let ((limit (cadr (assoc "limit" args))))
       (setq command (concat command (format ".limit(%s)" limit))))
@@ -163,35 +163,35 @@
 
 (defun mongodb-shell-insert-one (shell db coll document &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.insertOne(%s, %s)" coll document (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].insertOne(%s, %s)" coll document (or args "{}"))))
 
 (defun mongodb-shell-insert-many (shell db coll documents &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.insertMany(%s, %s)" coll documents (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].insertMany(%s, %s)" coll documents (or args "{}"))))
 
 (defun mongodb-shell-update-one (shell db coll filter-update &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.updateOne(%s, %s)" coll filter-update (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].updateOne(%s, %s)" coll filter-update (or args "{}"))))
 
 (defun mongodb-shell-update-many (shell db coll filter-update &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.updateMany(%s, %s)" coll filter-update (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].updateMany(%s, %s)" coll filter-update (or args "{}"))))
 
 (defun mongodb-shell-replace-one (shell db coll filter-replacement &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.replaceOne(%s, %s)" coll filter-replacement (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].replaceOne(%s, %s)" coll filter-replacement (or args "{}"))))
 
 (defun mongodb-shell-delete-one (shell db coll filter &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.deleteOne(%s, %s)" coll filter (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].deleteOne(%s, %s)" coll filter (or args "{}"))))
 
 (defun mongodb-shell-delete-many (shell db coll filter &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.deleteMany(%s, %s)" coll filter (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].deleteMany(%s, %s)" coll filter (or args "{}"))))
 
 (defun mongodb-shell-drop-collection (shell db coll &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.drop(%s)" coll (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].drop(%s)" coll (or args "{}"))))
 
 (defun mongodb-shell-list-indexes (shell db coll &optional args)
   (mongodb-shell-command shell (concat "use " db))
@@ -205,11 +205,14 @@
 
 (defun mongodb-shell-create-index (shell db coll keys &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (mongodb-shell-command shell (format "db.%s.createIndex(%s, %s)" coll keys (or args "{}"))))
+  (mongodb-shell-command shell (format "db[%S].createIndex(%s, %s)" coll keys (or args "{}"))))
 
 (defun mongodb-shell-create-collection (shell db coll-name &optional args)
   (mongodb-shell-command shell (concat "use " db))
   (mongodb-shell-command shell (format "db.createCollection(%S, %s)" coll-name (or args "{}"))))
+
+(defun mongodb-shell-generate-uuid (shell)
+  (mongodb-shell-command shell "UUID().hex()"))
 
 (defun mongodb-shell-cursor-live-pretty-p (shell cursor-id)
   (string= (mongodb-shell-command shell (format "cursor%s.isExhausted()" cursor-id)) "false"))
