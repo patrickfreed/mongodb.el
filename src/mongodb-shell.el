@@ -207,13 +207,13 @@
 
 (defun mongodb-shell-list-indexes (shell db coll &optional args)
   (mongodb-shell-command shell (concat "use " db))
-  (let* ((uuid (mongodb-shell-command shell "UUID().hex()"))
+  (let* ((cursor-name (mongodb-cursor-generate-name shell))
          (command (format
-                   "let cursor%s = new DBCommandCursor(db, db.runCommand({ \"listIndexes\": %S }))"
-                   uuid
+                   "let %s = new DBCommandCursor(db, db.runCommand({ \"listIndexes\": %S }))"
+                   cursor-name
                    coll)))
     (mongodb-shell-command shell (concat command ";"))
-    (mongodb-shell-cursor-to-list shell uuid)))
+    (mongodb-cursor-to-list (make-mongodb-cursor :name cursor-name :shell shell))))
 
 (defun mongodb-shell-create-index (shell db coll keys &optional args)
   (mongodb-shell-command shell (concat "use " db))
@@ -239,18 +239,3 @@
     (if (re-search-forward "^Type \"it\" for more" nil t)
         (buffer-substring (point-min) (match-beginning 0))
       (buffer-string))))
-
-(defun mongodb-shell-cursor-has-next-p (shell cursor-id)
-  (let ((output (mongodb-shell-command shell (format "cursor%s.hasNext()" cursor-id))))
-    (string= output "true")))
-
-(defun mongodb-shell-cursor-next (shell cursor-id)
-  (with-temp-buffer
-    (insert (mongodb-shell-command shell (format "cursor%s.next()" cursor-id)))
-    (buffer-string)))
-
-(defun mongodb-shell-cursor-to-list (shell cursor-id)
-  (let ((results))
-    (while (mongodb-shell-cursor-has-next-p shell cursor-id)
-      (setq results (append results (list (mongodb-shell-cursor-next shell cursor-id)))))
-    results))

@@ -105,6 +105,7 @@
 ** DONE backwards navigation
    CLOSED: [2021-11-22 Mon 00:10]
 ** TODO pretty print collection options
+** TODO delete pretty cursor shell api
 
 * TODO clean up shell elisp API
 
