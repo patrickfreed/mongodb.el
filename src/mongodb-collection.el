@@ -14,9 +14,10 @@
 (defvar-local mongodb-collection-info nil)
 (defvar-local mongodb-collection-documents '())
 (defvar-local mongodb-collection-cursor nil)
+(defvar-local mongodb-collection-preview-count mongodb-collection-preview-batch-size)
 (defvar-local mongodb-collection-point-start nil)
 
-(defconst mongodb-collection-preview-count 20)
+(defconst mongodb-collection-preview-batch-size 20)
 
 (cl-defstruct mongodb-collection-doc
   doc
@@ -24,28 +25,41 @@
   abbreviated)
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name &optional documents)
-  (let ((prev-buffer (current-buffer)))
-    (switch-to-buffer
-     (get-buffer-create (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
-    (mongodb-collection-mode)
+  (let ((starting-point mongodb-collection-point-start))
+    (let ((buffer-name (format "mongodb-collection: %s/%s.%s" (mongodb-shell-uri mongo-shell) db-name coll-name)))
+      (if (not (string= buffer-name (buffer-name)))
+          (let ((prev-buffer (current-buffer)))
+            (switch-to-buffer
+             (get-buffer-create buffer-name))
+            (mongodb-collection-mode)
+            (setq display-line-numbers nil)
+            (setq-local mongodb-collection-prev-buffer prev-buffer)))
+      (setq starting-point (point)))
     (read-only-mode -1)
-    (setq display-line-numbers nil)
     (erase-buffer)
-    (setq-local mongodb-collection-prev-buffer prev-buffer)
     (setq-local mongodb-shell-process mongo-shell)
     (setq-local mongodb-database-current db-name)
     (setq-local mongodb-collection-current coll-name)
     (setq-local mongodb-collection-info (mongodb-collection--get-info))
-    (setq-local mongodb-collection-documents
-                (or documents
-                    (let ((cursor (mongodb-shell-find-cursor mongodb-shell-process db-name coll-name "{}" :limit mongodb-collection-preview-count))
-                          (docs '()))
-                      (while (mongodb-cursor-has-next cursor)
-                        (setq docs (append docs (list (make-mongodb-collection-doc
-                                                       :doc (mongodb-cursor-next cursor)
-                                                       :collapsed nil
-                                                       :abbreviated t)))))
-                      docs)))
+    (if (eq documents 'refresh)
+        (progn
+          (when mongodb-collection-cursor
+            (mongodb-cursor-close mongodb-collection-cursor))
+          (setq-local mongodb-collection-cursor nil)
+          (setq-local mongodb-collection-documents '()))
+      (setq-local mongodb-collection-documents (or documents '())))
+    (when (< (length mongodb-collection-documents) mongodb-collection-preview-count)
+      (when (not mongodb-collection-cursor)
+        (setq-local mongodb-collection-cursor (mongodb-shell-find-cursor mongodb-shell-process db-name coll-name "{}")))
+      (let ((i (length mongodb-collection-documents)))
+        (while (and (mongodb-cursor-has-next mongodb-collection-cursor) (< i mongodb-collection-preview-count))
+          (setq mongodb-collection-documents
+                (append mongodb-collection-documents
+                        (list (make-mongodb-collection-doc
+                               :doc (mongodb-cursor-next mongodb-collection-cursor)
+                               :collapsed nil
+                               :abbreviated t))))
+          (setq i (1+ i)))))
 
     (magit-insert-section (mongodb-collection-buffer-section)
       (magit-insert-section (mongodb-collection-info-section)
@@ -117,10 +131,10 @@
                        (insert more)))))))
            mongodb-collection-documents)
           (when (> document-count mongodb-collection-preview-count)
-            (insert (propertize (format "...omitting %s document(s) from preview..." (- document-count mongodb-collection-preview-count)) 'face 'shadow)))))))
-  (newline 2)
-  (goto-char mongodb-collection-point-start)
-  (read-only-mode))
+            (insert-text-button "Type + to preview more documents")))))
+    (newline 2)
+    (goto-char starting-point)
+    (read-only-mode)))
 
 (defun mongodb-collection--get-info ()
   (mongodb-shell-command mongodb-shell-process (concat "use " mongodb-database-current))
@@ -150,6 +164,13 @@
         (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current mongodb-collection-documents)
         (goto-char p)))))
 
+(defun mongodb-collection--preview-more ()
+  (interactive)
+  (setq-local mongodb-collection-preview-count (+ mongodb-collection-preview-count mongodb-collection-preview-batch-size))
+  (message "previewing %s more documents..." mongodb-collection-preview-count)
+  (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current mongodb-collection-documents)
+  (message "previewing %s more documents...done" mongodb-collection-preview-batch-size))
+
 (defun mongodb-collection-expand-at-point ()
   (interactive)
   (mongodb-collection--set-expanded-at-point t))
@@ -171,7 +192,7 @@
   (interactive)
   (when (not silent)
     (message "refreshing..."))
-  (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current)
+  (mongodb-view-collection mongodb-shell-process mongodb-database-current mongodb-collection-current 'refresh)
   (when (not silent)
     (message "refreshing...done")))
 
@@ -574,7 +595,7 @@
       "gr" 'mongodb-collection-refresh
       "<" 'mongodb-collection--back
       "q" 'mongodb-collection-quit
-      "+" 'mongodb-collection-expand-at-point
+      "+" 'mongodb-collection--preview-more
       "-" 'mongodb-collection-hide-at-point
       (kbd "<tab>") 'mongodb-collection-toggle-at-point
       ;; "D" 'mongodb-collection--drop
@@ -596,7 +617,7 @@
   (define-key mongodb-collection-mode-map (kbd "<") 'mongodb-collection-back)
   (define-key mongodb-collection-mode-map (kbd "gr") 'mongodb-collection-refresh)
   (define-key mongodb-collection-mode-map (kbd "<tab>") 'mongodb-collection-toggle-at-point)
-  (define-key mongodb-collection-mode-map (kbd "+") 'mongodb-collection-expand-at-point)
+  (define-key mongodb-collection-mode-map (kbd "+") 'mongodb-collection--preview-more)
   (define-key mongodb-collection-mode-map (kbd "-") 'mongodb-collection-hide-at-point))
 
 (define-derived-mode

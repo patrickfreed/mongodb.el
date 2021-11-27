@@ -32,20 +32,20 @@
 ** DONE rationalize arguments
    CLOSED: [2021-11-21 Sun 18:56]
    
-* DONE Collection preview
-  CLOSED: [2021-11-22 Mon 00:17]
-** CANCELLED view more via '+'
-   CLOSED: [2021-11-21 Sun 19:17]
+* TODO Collection preview
+** DONE view more via '+'
+   CLOSED: [2021-11-27 Sat 17:28]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
      not needed with collection explorer
+   - uncancelling: scrapping collection explorer, merging with query results viewer
 ** DONE toggle collapsed, expanded
    CLOSED: [2021-11-21 Sun 19:17]
    - State "DONE"       from "CANCELLED"  [2021-11-26 Fri 01:29]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:17] \\
      not needed with collection explorer
      turns out I already did this
-** CANCELLED delete document via "x" on hover
-   CLOSED: [2021-11-21 Sun 19:19]
+** TODO delete document via "x" on hover
+   - State "TODO"       from "CANCELLED"  [2021-11-27 Sat 16:43]
    - State "CANCELLED"  from "TODO"       [2021-11-21 Sun 19:19] \\
      not needed with collection explorer
 ** DONE show indexes
@@ -54,7 +54,7 @@
    CLOSED: [2021-11-21 Sun 22:01]
 ** DONE pretty print large documents after expansion
    CLOSED: [2021-11-22 Mon 00:17]
-   
+
 * DONE Database operations
   CLOSED: [2021-11-21 Sun 20:50]
 ** DONE drop collection(s)
@@ -66,11 +66,15 @@
    CLOSED: [2021-11-21 Sun 20:46]
 ** DONE generic runCommand using query input
 
-* TODO Collection explorer
-** TODO buffer to explore collections contents
+* CANCELLED Collection explorer
+  CLOSED: [2021-11-27 Sat 16:44]
+  - State "CANCELLED"  from "TODO"       [2021-11-27 Sat 16:44] \\
+    merging collection preview and query results logic
+** CANCELLED buffer to explore collections contents
+   CLOSED: [2021-11-27 Sat 16:43]
+   - State "CANCELLED"  from "TODO"       [2021-11-27 Sat 16:43] \\
+     scrapping collection explorer, reusing logic between query results viewer and collection preview
    This should be paginated, pretty
-** TODO edit individual document applies update server side
-** TODO delete individual document server side
 ** CANCELLED batch delete documents dired style
    CLOSED: [2021-11-22 Mon 00:25]
 
@@ -90,6 +94,13 @@
 ** DONE basic display
 ** TODO repeat prior query (with input)
 ** TODO display message indicating no results were found
+** TODO collapse documents
+** TODO paginate results
+** TODO open document explorer on RET
+
+* TODO Document explorer
+** TODO edit individual document applies update server side
+** TODO delete individual document server side
 
 * TODO Auth
 ** TODO display authenticated user in connection window

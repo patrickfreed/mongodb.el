@@ -28,3 +28,6 @@
     (while (mongodb-cursor-has-next-p cursor)
       (setq results (append results (list (mongodb-cursor-next cursor)))))
     results))
+
+(defun mongodb-cursor-close (cursor)
+  (mongodb-shell-command (mongodb-cursor-shell cursor) (format "%s.close()" (mongodb-cursor-name cursor))))
