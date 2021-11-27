@@ -21,8 +21,14 @@
 
 (cl-defstruct mongodb-collection-doc
   doc
-  collapsed
-  abbreviated)
+  collapsed)
+
+(defun mongodb-collection-doc-new (doc)
+  (make-mongodb-collection-doc
+   :doc doc
+   :collapsed (with-temp-buffer
+                 (insert doc)
+                 (> (count-lines (point-min) (point-max)) 25))))
 
 (defun mongodb-view-collection (mongo-shell db-name coll-name &optional documents)
   (let ((starting-point mongodb-collection-point-start))
@@ -55,10 +61,7 @@
         (while (and (mongodb-cursor-has-next mongodb-collection-cursor) (< i mongodb-collection-preview-count))
           (setq mongodb-collection-documents
                 (append mongodb-collection-documents
-                        (list (make-mongodb-collection-doc
-                               :doc (mongodb-cursor-next mongodb-collection-cursor)
-                               :collapsed nil
-                               :abbreviated t))))
+                        (list (mongodb-collection-doc-new (mongodb-cursor-next mongodb-collection-cursor)))))
           (setq i (1+ i)))))
 
     (magit-insert-section (mongodb-collection-buffer-section)
@@ -108,27 +111,12 @@
           (seq-do
            (lambda (doc)
              (magit-insert-section (mongodb-collection-document doc t)
-               (if (mongodb-collection-doc-collapsed doc)
-                   (insert "{ " (propertize "...Document contents collapsed, press <TAB> to expand" 'face 'shadow) " }\n")
-                 (let ((first) (more) (n-lines))
-                   (with-temp-buffer
-                     (insert (mongodb-document-string (mongodb-collection-doc-doc doc)) "\n")
-                     (goto-char (point-min))
-                     (setq first
-                           (buffer-substring
-                            (point-min)
-                            (progn (forward-line 25) (point))))
-                     (when (> (count-lines (point-min) (point-max)) 25)
-                       (forward-line 1)
-                       (setq more (buffer-substring (point) (point-max)))
-                       (setq n-lines (- (count-lines (point-min) (point-max)) 25))))
-                   (insert first)
-                   (when more
-                     (if (mongodb-collection-doc-abbreviated doc)
-                         (progn
-                           (insert (propertize (format "\t...%s more lines collapsed, press '+' to expand\n" n-lines) 'face '('shadow italic)))
-                           (insert "}\n"))
-                       (insert more)))))))
+               (insert
+                (with-temp-buffer
+                  (if (not (mongodb-collection-doc-collapsed doc))
+                      (insert (mongodb-document-string (mongodb-collection-doc-doc doc)) "\n")
+                    (insert "{ " (propertize "...Document contents collapsed, press <TAB> to expand" 'face 'shadow) " }\n"))
+                  (buffer-string)))))
            mongodb-collection-documents)
           (when (> document-count mongodb-collection-preview-count)
             (insert-text-button "Type + to preview more documents")))))
@@ -596,7 +584,6 @@
       "<" 'mongodb-collection--back
       "q" 'mongodb-collection-quit
       "+" 'mongodb-collection--preview-more
-      "-" 'mongodb-collection-hide-at-point
       (kbd "<tab>") 'mongodb-collection-toggle-at-point
       ;; "D" 'mongodb-collection--drop
       ))
@@ -617,8 +604,7 @@
   (define-key mongodb-collection-mode-map (kbd "<") 'mongodb-collection-back)
   (define-key mongodb-collection-mode-map (kbd "gr") 'mongodb-collection-refresh)
   (define-key mongodb-collection-mode-map (kbd "<tab>") 'mongodb-collection-toggle-at-point)
-  (define-key mongodb-collection-mode-map (kbd "+") 'mongodb-collection--preview-more)
-  (define-key mongodb-collection-mode-map (kbd "-") 'mongodb-collection-hide-at-point))
+  (define-key mongodb-collection-mode-map (kbd "+") 'mongodb-collection--preview-more))
 
 (define-derived-mode
   mongodb-collection-mode
