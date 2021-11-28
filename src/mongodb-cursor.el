@@ -18,7 +18,7 @@
     (string= result "true")))
 
 (defun mongodb-cursor-next (cursor)
-  (when (mongodb-cursor-has-next cursor)
+  (when (mongodb-cursor-has-next-p cursor)
     (mongodb-shell-command
      (mongodb-cursor-shell cursor)
      (format "%s.next()" (mongodb-cursor-name cursor)))))

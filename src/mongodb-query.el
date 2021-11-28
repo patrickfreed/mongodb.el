@@ -10,6 +10,79 @@
 (defvar-local mongodb-query-cursor-id nil)
 (defvar-local mongodb-is-cursor-result nil)
 
+(defvar mongodb-query-keywords
+  '("$eq" "$gt" "$gt" "$gte" "$in" "$lt" "$lte" "$ne" "$nin"
+    "$and" "$not" "$nor" "$or"
+    "$exists" "$type"
+    "$expr" "$jsonSchema" "$mod" "$regex" "$text" "$where"
+    "$geoIntersects" "$geoWithin" "$near" "$nearSphere"
+    "$all" "$elemMatch" "$size"
+    "$bitsAllClear" "$bitsAllSet" "$bitsAnyClear" "$bitsAnySet"
+    "$" "$meta" "$slice"
+    "$comment" "$rand"
+    ;; agg stages
+    "$addFields" "$bucket" "$bucketAuto" "$collStats" "$count" "$facet"
+    "$geoNear" "$graphLookup" "$group" "$indexStats" "$limit" "$listSessions"
+    "$lookup" "$match" "$merge" "$out" "$planCacheStats" "$project"
+    "$replaceRoot" "$replaceWith" "$sample" "$search" "$set"
+    "$setWindowFields" "$skip" "$sort" "$sortByCount" "$unionWith"
+    "$unset" "$unwind"
+    ;; agg operators
+    "$abs" "$add" "$ceil" "$divide" "$exp" "$floor" "$ln" "$log" "$log10"
+    "$mod" "$multiply" "$pow" "$round" "$sqrt" "$trunc"
+    ;; array expression operators
+    "$arrayElemAt" "$arrayToObject" "$concatArrays" "$filter" "$first"
+    "$in" "$indexOfArray" "$isArray" "$last" "$map" "$objectToArray"
+    "$range" "$reduce" "$reverseArray" "$size" "$slice" "$zip"
+    ;; conditional expression operators
+    "$cond" "$ifNull" "$switch"
+    ;; custom agg expression operators
+    "$accumulator" "$function"
+    ;; data size operators
+    "$binarySize" "$bsonSize"
+    ;; date expression operators
+    "$dateAdd" "$dateDiff" "$dateFromParts" "$dateFromString" "$dateSubtract"
+    "$dateToParts" "$dateToString" "$daeTrunc" "$dayOfMonth" "$dayOfWeek"
+    "$dayOfYear" "$hour" "$isoDayOfWeek" "$isoWeek" "$millisecond" "$minute"
+    "$second" "$toDate" "$week" "$year" "$subtract"
+    ;; literal
+    "$literal"
+    ;; misc
+    "$getField" "$rand" "$sampleRate"
+    ;; object expression operators
+    "$mergeObjects" "$objectToArray" "$setField"
+    ;; set expression operators
+    "$allElementsTrue" "$anyElementTrue" "$setDifference" "$setEquals"
+    "$setIntersection" "$setIsSubset" "$setUnion"
+    ;; string expression operators
+    "$concat" "$dateFromString" "$dateToString" "$indexOfBytes" "$indexOfCP"
+    "$ltrim" "$regexFind" "$regexFindAll" "$regexMatch"
+    "$replaceAll" "$rtrim" "$split" "$strLenBytes" "$strLenCP" "$strcasecmp"
+    "$substr" "$substrBytes" "$substrCP" "$toLower" "$toString" "$trim"
+    "$toUpper"
+    ;; text expression operators
+    "$meta"
+    ;; trig operators
+    "$sin" "$cos" "$tan" "$asin" "$acos" "$atan" "$atan2" "$asinh" "$acosh"
+    "$atanh" "$sinh" "$cosh" "$tanh" "$degreesToRadians" "$radiansToDegrees"
+    ;; type expression operators
+    "$convert" "$isNumber" "$toBool" "$toDate" "$toDecimal" "$toDouble"
+    "$toInt" "$toLong" "$toObjectId" "$toString" "$type"
+    ;; accumulators
+    "$accumulator" "$addToSet" "$avg" "$count" "$first" "$last" "$max"
+    "$mergeObjects" "$min" "$push" "$stdDevPop" "$sum"
+    ;; variable expression operators
+    "$let"
+    ;; window operators
+    "$addToSet" "$avg" "$count" "$covariancePop" "$covarianceSamp" "$denseRank"
+    "$derivative" "$documentNumber" "$expMovingAvg" "$first" "$integral"
+    "$last" "$min" "$max" "$push" "$rank" "$shift" "$stdDevPop" "$stdDevSamp"
+    "$sum"
+    ;; update modifiers
+    "$currentDate" "$inc" "$min" "$max" "$mul" "$rename" "set" "$setOnInsert"
+    "$unset" "$[]" "$addToSet" "$pop" "$pull" "$push" "$pullAll" "$each"
+    "$position" "$slice" "$sort" "$bit"))
+
 (cl-defun mongodb-query-input (title shell body &key no-cursor (input-type 'document) (num-inputs 1) headings)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
@@ -76,11 +149,17 @@
   (define-key mongodb-query-mode-map (kbd "C-c C-c") 'mongodb-query-execute)
   )
 
+(defun mongodb-query-completion-function ()
+  (when-let* ((start (save-excursion (re-search-backward "\\$" nil t)))
+              (end (or (cdr (bounds-of-thing-at-point 'word)) start)))
+    (list start end mongodb-query-keywords)))
+
 (define-derived-mode
   mongodb-query-mode
   javascript-mode
   "MongoDB Query"
-  "Major mode for creating MongoDB queries")
+  "Major mode for creating MongoDB queries"
+  (add-hook 'completion-at-point-functions #'mongodb-query-completion-function nil t))
 
 (defvar mongodb-query-results-map nil "Keymap for MongoDB query input buffers")
 (progn

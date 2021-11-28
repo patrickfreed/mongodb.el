@@ -8,6 +8,8 @@
 
 (require 'seq)
 
+(defconst mongodb-collection-preview-batch-size 20)
+
 (defvar-local mongodb-collection-current nil)
 (defvar-local mongodb-database-current nil)
 (defvar-local mongodb-collection-prev-buffer nil)
@@ -17,7 +19,6 @@
 (defvar-local mongodb-collection-preview-count mongodb-collection-preview-batch-size)
 (defvar-local mongodb-collection-point-start nil)
 
-(defconst mongodb-collection-preview-batch-size 20)
 
 (cl-defstruct mongodb-collection-doc
   doc
@@ -58,7 +59,7 @@
       (when (not mongodb-collection-cursor)
         (setq-local mongodb-collection-cursor (mongodb-shell-find-cursor mongodb-shell-process db-name coll-name "{}")))
       (let ((i (length mongodb-collection-documents)))
-        (while (and (mongodb-cursor-has-next mongodb-collection-cursor) (< i mongodb-collection-preview-count))
+        (while (and (mongodb-cursor-has-next-p mongodb-collection-cursor) (< i mongodb-collection-preview-count))
           (setq mongodb-collection-documents
                 (append mongodb-collection-documents
                         (list (mongodb-collection-doc-new (mongodb-cursor-next mongodb-collection-cursor)))))
