@@ -1,0 +1,12 @@
+# name: merge
+# key: merge
+# --
+{
+    "$merge": {
+        "into": ${collection},
+        "on": ${identifier field or fields},
+        "let": ${variables},
+        "whenMatched": ${replace|keepExisting|merge|fail|pipeline},
+        "whenNotMatched": "${insert|discard|fail}"
+    }
+}

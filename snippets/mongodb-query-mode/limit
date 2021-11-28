@@ -1,0 +1,6 @@
+# name: limit
+# key: limit
+# --
+{
+    "$limit": ${positive 64-bit integer}
+}

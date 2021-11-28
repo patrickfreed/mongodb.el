@@ -1,0 +1,8 @@
+# name: group
+# key: group
+# --
+{
+    "$group": {
+        "_id": $0
+    }
+}

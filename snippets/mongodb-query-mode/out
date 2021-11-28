@@ -1,0 +1,6 @@
+# name: out
+# key: out
+# --
+{
+    "$out": "${output collection}"
+}

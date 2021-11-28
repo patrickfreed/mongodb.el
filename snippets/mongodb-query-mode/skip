@@ -1,0 +1,6 @@
+# name: skip
+# key: skip
+# --
+{
+    "$skip": ${positive 64-bit integer}
+}

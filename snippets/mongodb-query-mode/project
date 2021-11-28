@@ -1,0 +1,8 @@
+# name: project
+# key: project
+# --
+{
+    "$project": {
+        "${field}": ${projection},
+    }
+}

@@ -1,0 +1,8 @@
+# name: unwind
+# key: unwind
+# --
+{
+    "$unwind": {
+        "path": "${field path}",
+    }
+}

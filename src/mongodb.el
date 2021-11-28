@@ -139,3 +139,22 @@
   (define-key mongodb-mode-map (kbd "c") 'mongodb--view-collection)
   (define-key mongodb-mode-map (kbd "<ret>") 'mongodb-inspect-at-point))
 
+(defconst mongodb-snippets-dir
+  (expand-file-name
+   "snippets"
+   (file-name-directory
+    ;; Copied from ‘f-this-file’ from f.el.
+    (cond
+     (load-in-progress load-file-name)
+     ((and (boundp 'byte-compile-current-file) byte-compile-current-file)
+      byte-compile-current-file)
+     (:else (buffer-file-name))))))
+
+;;;###autoload
+(defun mongodb-snippets-initialize ()
+  (add-to-list 'yas-snippet-dirs 'mongodb-snippets-dir t)
+  (yas-load-directory mongodb-snippets-dir t))
+
+;;;###autoload
+(eval-after-load 'yasnippet
+  '(mongodb-snippets-initialize))

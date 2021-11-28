@@ -1,0 +1,8 @@
+# name: replaceRoot
+# key: replaceRoot
+# --
+{
+    "$replaceRoot": {
+        "newRoot": ${replacement document} 
+    }
+}

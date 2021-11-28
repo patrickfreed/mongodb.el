@@ -14,6 +14,7 @@ if [ -d "$SOURCE_DIR" ]; then
     rm -r ${SOURCE_DIR};
 fi
 cp -r src ${SOURCE_DIR}
+cp -r snippets ${SOURCE_DIR}
 
 tar -cf "mongodb-${VERSION}.tar" ${SOURCE_DIR}
 
