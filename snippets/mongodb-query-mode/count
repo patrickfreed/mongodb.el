@@ -1,0 +1,6 @@
+# name: count
+# key: count
+# --
+{
+    "$count": "${output field name}"
+}

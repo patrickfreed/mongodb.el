@@ -1,0 +1,9 @@
+# name: geoNear
+# key: geoNear
+# --
+{
+    "$geoNear": {
+        "distanceField": "${field name}",
+        ${geoNear options}
+    }
+}

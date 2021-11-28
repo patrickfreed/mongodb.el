@@ -1,0 +1,8 @@
+# name: addFields
+# key: addFields
+# --
+{
+    "$addFields": {
+        "${newField}": ${expression},
+    }
+}

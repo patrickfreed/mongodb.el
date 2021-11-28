@@ -1,0 +1,13 @@
+# name: bucketAuto
+# key: bucketAuto
+# --
+{
+    "$bucketAuto": {
+        "groupBy": ${expression},
+        "buckets": ${number},
+        "output": {
+            ${outputs} 
+        },
+        "granularity": "${string}"
+    }
+}

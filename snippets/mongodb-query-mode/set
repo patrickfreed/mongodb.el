@@ -1,0 +1,8 @@
+# name: set
+# key: set
+# --
+{
+    "$set": {
+        "${new field}": ${expression},
+    }
+}

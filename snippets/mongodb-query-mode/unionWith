@@ -1,0 +1,11 @@
+# name: unionWith
+# key: unionWith
+# --
+{
+    "$unionWith": {
+        "coll": "${collection}",
+        "pipeline": [
+            ${pipeline stages} 
+        ]
+    }
+}

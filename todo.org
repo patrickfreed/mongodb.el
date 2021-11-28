@@ -85,7 +85,8 @@
    CLOSED: [2021-11-27 Sat 22:59]
 ** DONE autocomplete aggregation stages
    CLOSED: [2021-11-27 Sat 22:59]
-** TODO snippets for completing entire operators and agg stages
+** DONE snippets for completing entire operators and agg stages
+   CLOSED: [2021-11-28 Sun 15:40]
    e.g. for a find query input, completing "gt" snippet inserts "{ "$gt": <point> }" or something
 ** TODO better syntax highlighting in query input
 

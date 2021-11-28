@@ -1,0 +1,13 @@
+# name: graphLookup
+# key: graphLookup
+# --
+{
+    "$graphLookup": {
+        "from": "${collection name}",
+        "startWith": ${expression},
+        "connectFromField": "${field name}",
+        "connectToField": "${field name}",
+        "as": "${field name}",
+        ${optional fields}
+    }
+}

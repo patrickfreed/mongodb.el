@@ -83,6 +83,14 @@
     "$unset" "$[]" "$addToSet" "$pop" "$pull" "$push" "$pullAll" "$each"
     "$position" "$slice" "$sort" "$bit"))
 
+(defvar mongodb-query-option-keywords
+  '(;; geoNear options
+    "distanceField" "distanceMultiplier" "includeLocs" "key" "maxDistance"
+    "minDistance" "near" "query" "spherical" "uniqueDocs"
+    ;; graphLookup options
+    "from" "startWith" "connectFromField" "connectToField" "as" "maxDepth" "depthField"
+    "restrictSearchWithMatch"))
+
 (cl-defun mongodb-query-input (title shell body &key no-cursor (input-type 'document) (num-inputs 1) headings)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
@@ -150,9 +158,11 @@
   )
 
 (defun mongodb-query-completion-function ()
-  (when-let* ((start (save-excursion (re-search-backward "\\$" nil t)))
-              (end (or (cdr (bounds-of-thing-at-point 'word)) start)))
-    (list start end mongodb-query-keywords)))
+  (if-let* ((start (save-excursion (re-search-backward "\\$" nil t)))
+            (end (or (cdr (bounds-of-thing-at-point 'word)) start)))
+      (list start end mongodb-query-keywords)
+    (when-let* ((bounds (bounds-of-thing-at-point 'word)))
+      (list (car bounds) (cdr bounds) mongodb-query-option-keywords))))
 
 (define-derived-mode
   mongodb-query-mode

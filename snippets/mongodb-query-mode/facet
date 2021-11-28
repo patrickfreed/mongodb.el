@@ -1,0 +1,10 @@
+# name: facet
+# key: facet
+# --
+{
+    "$facet": {
+        "${outputField1}": [
+            ${pipeline} 
+        ] 
+    }
+}

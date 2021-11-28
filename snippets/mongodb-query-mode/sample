@@ -1,0 +1,8 @@
+# name: sample
+# key: sample
+# --
+{
+    "$sample": {
+        "size": ${positive integer},
+    }
+}

@@ -1,0 +1,13 @@
+# name: bucket
+# key: bucket
+# --
+{
+    "$bucket": {
+        "groupBy": ${expression},
+        "boundaries": [ ${boundaries...} ],
+        "default": ${literal},
+        "output": {
+            ${outputs} 
+        }
+    }
+}
