@@ -78,7 +78,8 @@
    - State "CANCELLED"  from "TODO"       [2021-11-22 Mon 00:25] \\
      doesn't seem that useful in comparison to how hard it would be to implement
 
-* TODO Query input
+* DONE Query input
+  CLOSED: [2021-11-28 Sun 16:06]
 ** DONE space out {} and [] for prettier input
    CLOSED: [2021-11-21 Sun 20:47]
 ** DONE autocomplete find query operators
@@ -88,7 +89,11 @@
 ** DONE snippets for completing entire operators and agg stages
    CLOSED: [2021-11-28 Sun 15:40]
    e.g. for a find query input, completing "gt" snippet inserts "{ "$gt": <point> }" or something
-** TODO better syntax highlighting in query input
+** CANCELLED better syntax highlighting in query input
+   CLOSED: [2021-11-28 Sun 16:06]
+
+   - State "CANCELLED"  from "TODO"       [2021-11-28 Sun 16:06] \\
+     highlighting is good enough
 
 * TODO Query results
 ** DONE basic display
