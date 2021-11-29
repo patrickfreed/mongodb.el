@@ -104,11 +104,12 @@
 ** DONE paginate results
    CLOSED: [2021-11-29 Mon 01:27]
 ** TODO reuse query result code in collection preview
-** TODO open document explorer on RET
+** TODO handle errors in cursor-based queries
 
 * TODO Document explorer
 ** TODO edit individual document applies update server side
 ** TODO delete individual document server side
+** TODO open document explorer on RET in collection preview
 
 * TODO Auth
 ** TODO display authenticated user in connection window
