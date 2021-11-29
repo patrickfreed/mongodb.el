@@ -99,8 +99,11 @@
 ** DONE basic display
 ** TODO repeat prior query (with input)
 ** TODO display message indicating no results were found
-** TODO collapse documents
-** TODO paginate results
+** DONE collapse documents
+   CLOSED: [2021-11-29 Mon 01:27]
+** DONE paginate results
+   CLOSED: [2021-11-29 Mon 01:27]
+** TODO reuse query result code in collection preview
 ** TODO open document explorer on RET
 
 * TODO Document explorer

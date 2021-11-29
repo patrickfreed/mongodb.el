@@ -207,8 +207,12 @@
       (mongodb-query-input
        "find filter"
        shell-process
+       db
+       coll
        (lambda (filter)
-         (mongodb-shell-find-pretty shell-process db coll filter pairs))))))
+         (mongodb-shell-find-build coll filter pairs))
+       (lambda (filter)
+         (mongodb-shell-find-cursor shell-process db coll filter pairs))))))
 
 (defun mongodb-collection--aggregate (&optional args)
   (interactive (list (transient-args 'mongodb-collection-aggregate-transient)))
@@ -219,8 +223,12 @@
       (mongodb-query-input
        "aggregation pipeline"
        shell-process
+       db
+       coll
        (lambda (pipeline)
-         (mongodb-shell-aggregate-pretty shell-process db coll pipeline pairs))
+         (mongodb-shell-aggregate-build coll pipeline pairs))
+       (lambda (pipeline)
+         (mongodb-shell-aggregate-cursor shell-process db coll pipeline pairs))
        :input-type 'array))))
 
 (defun mongodb-args-to-document (args)
@@ -239,13 +247,17 @@
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (message "inserting into collection %s" mongodb-collection-current)
     (mongodb-query-input
      "document to insert"
      shell-process
+     db
+     coll
+     (lambda (doc) (mongodb-shell-insert-one-build coll doc args))
      (lambda (doc)
-       (let ((result (mongodb-shell-insert-one shell-process db coll doc (mongodb-args-to-document args))))
+       (let ((result (mongodb-shell-insert-one shell-process db coll doc args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -256,30 +268,38 @@
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (mongodb-query-input
      "documents to insert"
      shell-process
+     db
+     coll
+     (lambda (docs) (mongodb-shell-insert-many-build coll docs args))
      (lambda (docs)
        (let ((result
-              (mongodb-shell-insert-many shell-process db coll docs (mongodb-args-to-document args))))
+              (mongodb-shell-insert-many shell-process db coll docs args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
      :no-cursor t
      :input-type 'array)))
 
-(defun mongodb-collection--update (update-fun &optional args)
+(defun mongodb-collection--update (update-fun update-build-fun &optional args)
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (message "updating collection %s" mongodb-collection-current)
     (mongodb-query-input
      "filter and update documents"
      shell-process
+     db
+     coll
+     (lambda (filter-update) (funcall update-build-fun coll filter-update args))
      (lambda (filter-update)
-       (let ((result (funcall update-fun shell-process db coll filter-update (mongodb-args-to-document args))))
+       (let ((result (funcall update-fun shell-process db coll filter-update args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -290,24 +310,28 @@
 
 (defun mongodb-collection--update-one (&optional args)
   (interactive (list (transient-args 'mongodb-collection-update-one-transient)))
-  (mongodb-collection--update 'mongodb-shell-update-one args))
+  (mongodb-collection--update 'mongodb-shell-update-one 'mongodb-shell-update-one-build args))
 
 (defun mongodb-collection--update-many (&optional args)
   (interactive (list (transient-args 'mongodb-collection-update-many-transient)))
-  (mongodb-collection--update 'mongodb-shell-update-many args))
+  (mongodb-collection--update 'mongodb-shell-update-many 'mongodb-shell-update-many-build args))
 
 (defun mongodb-collection--replace-one (&optional args)
   (interactive (list (transient-args 'mongodb-collection-replace-one-transient)))
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (mongodb-query-input
      "filter and replacement documents"
      shell-process
+     db
+     coll
+     (lambda (filter-replacement) (mongodb-shell-replace-one-build coll filter-replacement args))
      (lambda (filter-replacement)
        (let ((result
-              (mongodb-shell-replace-one shell-process db coll filter-replacement (mongodb-args-to-document args))))
+              (mongodb-shell-replace-one shell-process db coll filter-replacement args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -320,12 +344,16 @@
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (mongodb-query-input
      "Enter a filter document"
      shell-process
+     db
+     coll
+     (lambda (filter) (mongodb-shell-delete-one-build coll filter args))
      (lambda (filter)
-       (let ((result (mongodb-shell-delete-one shell-process db coll filter (mongodb-args-to-document args))))
+       (let ((result (mongodb-shell-delete-one shell-process db coll filter args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -336,12 +364,16 @@
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (mongodb-query-input
      "Enter a filter document"
      shell-process
+     db
+     coll
+     (lambda (filter) (mongodb-shell-delete-many-build coll filter args))
      (lambda (filter)
-       (let ((result (mongodb-shell-delete-many shell-process db coll filter (mongodb-args-to-document args))))
+       (let ((result (mongodb-shell-delete-many shell-process db coll filter args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -352,12 +384,16 @@
   (let ((shell-process mongodb-shell-process)
         (db mongodb-database-current)
         (coll mongodb-collection-current)
-        (buf (current-buffer)))
+        (buf (current-buffer))
+        (args (mongodb-args-to-document args)))
     (mongodb-query-input
      "Enter the index keys document"
      shell-process
+     db
+     coll
+     (lambda (keys) (mongodb-shell-create-index-build coll keys args))
      (lambda (keys)
-       (let ((result (mongodb-shell-create-index shell-process db coll keys (mongodb-args-to-document args))))
+       (let ((result (mongodb-shell-create-index shell-process db coll keys args)))
          (with-current-buffer buf
            (mongodb-collection-refresh t))
          result))
@@ -464,7 +500,7 @@
    ("s" mongodb-update-upsert)
    ("w" "Write concern" "writeConcern=")]
   ["Update Many"
-   ("u" "Prompt for a filter document and an update document" mongodb-collection--update-many)])
+   ("U" "Prompt for a filter document and an update document" mongodb-collection--update-many)])
 
 (define-transient-command mongodb-collection-replace-one-transient ()
   "replaceOne command"
@@ -486,7 +522,7 @@
   ["Options"
    ("w" "Write concern" "writeConcern=")]
   ["Delete Many"
-   ("d" "Prompt for a filter document and execute the delete" mongodb-collection--delete-many)])
+   ("D" "Prompt for a filter document and execute the delete" mongodb-collection--delete-many)])
 
 (define-transient-command mongodb-collection-create-index-transient ()
   "createIndex command"
