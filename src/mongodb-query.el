@@ -6,18 +6,12 @@
 
 (require 'cl-lib)
 
-(defvar-local mongodb-query-body nil)
-(defvar-local mongodb-query-cursor-id nil)
-(defvar-local mongodb-query-build nil)
-(defvar-local mongodb-query-db nil)
-(defvar-local mongodb-query-coll nil)
+(defvar-local mongodb-query-cache nil)
+(defvar-local mongodb-query-use-same-window nil)
 
-(defvar-local mongodb-query-results-db nil)
-(defvar-local mongodb-query-results-coll nil)
-(defvar-local mongodb-is-cursor-result nil)
 (defvar-local mongodb-query-results-results nil)
 (defvar-local mongodb-query-results-raw-input nil)
-(defvar-local mongodb-query-results-query nil)
+(defvar-local mongodb-query-results-query-string nil)
 
 (defvar mongodb-query-keywords
   '("$eq" "$gt" "$gt" "$gte" "$in" "$lt" "$lte" "$ne" "$nin"
@@ -100,21 +94,45 @@
     "from" "startWith" "connectFromField" "connectToField" "as" "maxDepth" "depthField"
     "restrictSearchWithMatch"))
 
+(cl-defstruct mongodb-query
+  title
+  shell
+  db
+  coll
+  build-fn
+  body-fn
+  is-cursor-result
+  input-type
+  num-inputs
+  headings)
+
 (cl-defun mongodb-query-input (title shell db coll build-query body &key no-cursor (input-type 'document) (num-inputs 1) headings)
+  (mongodb-query-input-query
+   (make-mongodb-query
+    :title title
+    :shell shell
+    :db db
+    :coll coll
+    :build-fn build-query
+    :body-fn body
+    :is-cursor-result (not no-cursor)
+    :input-type input-type
+    :num-inputs num-inputs
+    :headings headings)))
+
+(defun mongodb-query-input-query (query &optional same-window)
   (switch-to-buffer (get-buffer-create "*mongodb query input*"))
   (erase-buffer)
   (mongodb-query-mode)
-  (setq-local mongodb-shell-process shell)
-  (setq-local mongodb-query-db db)
-  (setq-local mongodb-query-coll coll)
-  (setq-local mongodb-query-body body)
-  (setq-local mongodb-query-build build-query)
-  (setq-local mongodb-is-cursor-result (not no-cursor))
-  (insert "// " title "\n")
+  (setq-local mongodb-query-cache query)
+  (setq-local mongodb-query-use-same-window same-window)
+  (insert "// " (mongodb-query-title query) "\n")
   (insert "// Press C-c C-c to submit." "\n")
-  (cond
-   ((eq input-type 'array) (mongodb-query-insert-prompt "[" "]" num-inputs headings))
-   (t (mongodb-query-insert-prompt "{" "}" num-inputs headings))))
+  (let ((num-inputs (mongodb-query-num-inputs query))
+        (headings (mongodb-query-headings query)))
+    (cond
+     ((eq (mongodb-query-input-type query) 'array) (mongodb-query-insert-prompt "[" "]" num-inputs headings))
+     (t (mongodb-query-insert-prompt "{" "}" num-inputs headings)))))
 
 (defun mongodb-query-insert-prompt (open close num headings)
   (let ((end-point))
@@ -141,17 +159,22 @@
   (let ((raw-input (buffer-string)))
     (flush-lines "^//")
     (flush-lines "^$")
-    (let* ((db mongodb-query-db)
-           (coll mongodb-query-coll)
-           (input (funcall mongodb-query-build (string-trim-right (buffer-string))))
-           (query-result (funcall mongodb-query-body (buffer-string)))
-           (shell-process mongodb-shell-process)
-           (is-cursor-result mongodb-is-cursor-result))
+    (let* ((query mongodb-query-cache)
+           (db (mongodb-query-db mongodb-query-cache))
+           (coll (mongodb-query-coll mongodb-query-cache))
+           (build-fn (mongodb-query-build-fn mongodb-query-cache))
+           (body-fn (mongodb-query-body-fn mongodb-query-cache))
+           (input (funcall build-fn (string-trim-right (buffer-string))))
+           (query-result (funcall body-fn (buffer-string)))
+           (use-same-window mongodb-query-use-same-window))
       (kill-buffer "*mongodb query input*")
-      (switch-to-buffer-other-window (generate-new-buffer "*mongodb query results*"))
+      (let ((next-buffer (generate-new-buffer "*mongodb query results*")))
+        (if use-same-window
+            (switch-to-buffer next-buffer)
+          (switch-to-buffer-other-window next-buffer)))
 
       (let ((results
-             (if is-cursor-result
+             (if (mongodb-query-is-cursor-result query)
                  (progn
                    (let ((results (make-mongodb-query-result-set :cursor query-result :documents '())))
                      (mongodb-query-result-set-more results 20)
@@ -159,30 +182,29 @@
                (make-mongodb-query-result-set
                 :documents (list (mongodb-query-result-doc-new query-result))
                 :cursor nil))))
-        (mongodb-query-results-view (current-buffer) db coll input raw-input shell-process results)))))
+        (mongodb-query-results-view (current-buffer) query input raw-input results)))))
 
-(defun mongodb-query-results-view (buffer db coll input raw-input shell-process results)
+(defun mongodb-query-results-view (buffer query input raw-input results)
   (switch-to-buffer buffer)
   (mongodb-query-results-mode)
   (read-only-mode -1)
   (erase-buffer)
-  (setq-local mongodb-query-results-query (string-trim-right input))
+  (setq-local mongodb-query-results-query-string (string-trim-right input))
   (setq-local mongodb-query-results-raw-input raw-input)
-  (setq-local mongodb-query-results-db db)
   (setq-local mongodb-query-results-results results)
-  (setq-local mongodb-query-results-coll coll)
-  (setq-local mongodb-shell-process shell-process)
+
+  (setq-local mongodb-query-cache query)
 
   (magit-insert-section (mongodb-query-results-info-section)
-    (mongodb--insert-header-line "Database Name" (propertize db 'face 'magit-branch-local))
-    (mongodb--insert-header-line "Collection Name" (propertize coll 'face 'magit-branch-remote)))
+    (mongodb--insert-header-line "Database Name" (propertize (mongodb-query-db query) 'face 'magit-branch-local))
+    (mongodb--insert-header-line "Collection Name" (propertize (mongodb-query-coll query) 'face 'magit-branch-remote)))
   (newline)
 
   (save-excursion
     (magit-insert-section (mongodb-query-results-root)
       (magit-insert-section (mongodb-query-results-input nil t)
         (magit-insert-heading (propertize "Query" 'face 'magit-section-heading))
-        (insert mongodb-query-results-query)
+        (insert mongodb-query-results-query-string)
         (newline))
       (newline)
       (mongodb-query-result-set-insert mongodb-query-results-results "Results")
@@ -190,16 +212,18 @@
         (insert-text-button "Type + to preview more documents"))))
   (read-only-mode))
 
+(defun mongodb-query-results-rerun ()
+  (interactive)
+  (mongodb-query-input-query mongodb-query-cache t))
+
 (defun mongodb-query-results--redraw ()
   (interactive)
   (let ((p (point)))
     (mongodb-query-results-view
      (current-buffer)
-     mongodb-query-results-db
-     mongodb-query-results-coll
-     mongodb-query-results-query
+     mongodb-query-cache
+     mongodb-query-results-query-string
      mongodb-query-results-raw-input
-     mongodb-shell-process
      mongodb-query-results-results)
     (goto-char p)))
 
@@ -291,8 +315,10 @@
   (when (require 'evil nil t)
     (evil-define-key 'normal mongodb-query-results-mode-map
       (kbd "<tab>") 'mongodb-query-results-toggle-at-point
+      (kbd "r") 'mongodb-query-results-rerun
       (kbd "+") 'mongodb-query-results--more))
   (define-key mongodb-query-results-mode-map (kbd "<tab>") 'mongodb-query-results-toggle-at-point))
+  (define-key mongodb-query-results-mode-map (kbd "r") 'mongodb-query-results-rerun)
   (define-key mongodb-query-results-mode-map (kbd "+") 'mongodb-query-results--more)
 
 (define-derived-mode

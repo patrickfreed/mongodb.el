@@ -97,7 +97,8 @@
 
 * TODO Query results
 ** DONE basic display
-** TODO repeat prior query (with input)
+** DONE repeat prior query (with input)
+   CLOSED: [2021-12-02 Thu 23:53]
 ** TODO display message indicating no results were found
 ** DONE collapse documents
    CLOSED: [2021-11-29 Mon 01:27]
